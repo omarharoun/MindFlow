@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Modal,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -23,6 +25,7 @@ import {
   Plus,
   Target,
   Award,
+  X,
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 
@@ -67,13 +70,58 @@ const DashboardTile: React.FC<DashboardTileProps> = ({
 );
 
 const HomeDashboard: React.FC = () => {
-  const { user, tasks, notes, knowledgeNodes, addExperience } = useStore();
+  const { user, tasks, notes, knowledgeNodes, addTask, addNote, addExperience } = useStore();
   const [notifications] = useState(3);
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
-  const handleQuickCapture = (text: string) => {
-    // TODO: Implement quick capture
-    console.log('Quick capture:', text);
-    addExperience(10);
+  const handleAddItem = (type: 'task' | 'note' | 'event' | 'knowledge') => {
+    setShowAddMenu(false);
+    
+    switch (type) {
+      case 'task':
+        const newTask = {
+          id: Date.now().toString(),
+          title: 'New Task',
+          description: '',
+          completed: false,
+          priority: 'medium' as const,
+          category: 'General',
+          tags: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        addTask(newTask);
+        addExperience(10);
+        Alert.alert('Task Added', 'New task created successfully!');
+        break;
+        
+      case 'note':
+        const newNote = {
+          id: Date.now().toString(),
+          title: 'New Note',
+          content: '',
+          category: 'General',
+          tags: [],
+          media: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isPinned: false,
+        };
+        addNote(newNote);
+        addExperience(10);
+        Alert.alert('Note Added', 'New note created successfully!');
+        break;
+        
+      case 'event':
+        addExperience(10);
+        Alert.alert('Event Added', 'New event created successfully!');
+        break;
+        
+      case 'knowledge':
+        addExperience(10);
+        Alert.alert('Knowledge Node Added', 'New knowledge node created successfully!');
+        break;
+    }
   };
 
   const handleTilePress = (title: string) => {
@@ -253,10 +301,10 @@ const HomeDashboard: React.FC = () => {
           <View style={styles.bottomSpacing} />
         </ScrollView>
 
-        {/* Quick Capture FAB */}
+        {/* Add Menu FAB */}
         <TouchableOpacity
           style={styles.fab}
-          onPress={() => handleQuickCapture('')}
+          onPress={() => setShowAddMenu(true)}
           activeOpacity={0.8}
         >
           <LinearGradient
@@ -266,6 +314,95 @@ const HomeDashboard: React.FC = () => {
             <Plus size={24} color="#FFFFFF" strokeWidth={3} />
           </LinearGradient>
         </TouchableOpacity>
+
+        {/* Add Menu Modal */}
+        <Modal
+          visible={showAddMenu}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowAddMenu(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowAddMenu(false)}
+          >
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Add New</Text>
+                <TouchableOpacity onPress={() => setShowAddMenu(false)}>
+                  <X size={24} color="#FFFFFF" strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.menuOptions}>
+                <TouchableOpacity
+                  style={styles.menuOption}
+                  onPress={() => handleAddItem('task')}
+                >
+                  <LinearGradient
+                    colors={['#34C759', '#28A745']}
+                    style={styles.menuOptionGradient}
+                  >
+                    <CheckSquare size={24} color="#FFFFFF" strokeWidth={2} />
+                  </LinearGradient>
+                  <View style={styles.menuOptionText}>
+                    <Text style={styles.menuOptionTitle}>Task</Text>
+                    <Text style={styles.menuOptionSubtitle}>Add a new task</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuOption}
+                  onPress={() => handleAddItem('note')}
+                >
+                  <LinearGradient
+                    colors={['#007AFF', '#0056CC']}
+                    style={styles.menuOptionGradient}
+                  >
+                    <FileText size={24} color="#FFFFFF" strokeWidth={2} />
+                  </LinearGradient>
+                  <View style={styles.menuOptionText}>
+                    <Text style={styles.menuOptionTitle}>Note</Text>
+                    <Text style={styles.menuOptionSubtitle}>Write a quick note</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuOption}
+                  onPress={() => handleAddItem('event')}
+                >
+                  <LinearGradient
+                    colors={['#FF9500', '#FF8C00']}
+                    style={styles.menuOptionGradient}
+                  >
+                    <Calendar size={24} color="#FFFFFF" strokeWidth={2} />
+                  </LinearGradient>
+                  <View style={styles.menuOptionText}>
+                    <Text style={styles.menuOptionTitle}>Event</Text>
+                    <Text style={styles.menuOptionSubtitle}>Schedule an event</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuOption}
+                  onPress={() => handleAddItem('knowledge')}
+                >
+                  <LinearGradient
+                    colors={['#FF3B30', '#E53E3E']}
+                    style={styles.menuOptionGradient}
+                  >
+                    <BookOpen size={24} color="#FFFFFF" strokeWidth={2} />
+                  </LinearGradient>
+                  <View style={styles.menuOptionText}>
+                    <Text style={styles.menuOptionTitle}>Knowledge Node</Text>
+                    <Text style={styles.menuOptionSubtitle}>Create knowledge</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -459,6 +596,61 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#1E293B',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+  },
+  menuOptions: {
+    gap: 16,
+  },
+  menuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#334155',
+    borderRadius: 16,
+  },
+  menuOptionGradient: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  menuOptionText: {
+    flex: 1,
+  },
+  menuOptionTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  menuOptionSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#CCCCCC',
   },
 });
 
