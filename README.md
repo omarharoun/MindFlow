@@ -1,75 +1,63 @@
 # MindFlow - Unified Learning & Productivity Platform
 
+> **Where Knowledge Flows** - A React Native app that combines productivity management, knowledge organization, and social learning into one seamless experience.
+
 ## 🎯 Vision
-MindFlow is a React Native app that combines productivity management, knowledge organization, and social learning into one seamless experience. It transforms how people learn, create, and share knowledge in a social, gamified environment.
 
-## 🏗️ Core Architecture
+MindFlow transforms how people learn, create, and share knowledge in a social, gamified environment. It combines the best aspects of:
 
-### 1. **Productivity Hub** (from IHSAN-Dashboard)
+- **IHSAN-Dashboard**: Productivity and task management
+- **MindWeb**: Knowledge organization and AI-powered learning
+- **TikTik**: Social content creation and discovery
+
+## 🚀 Key Features
+
+### 📊 Productivity Hub
 - **Quick Actions Dashboard**: Notes, tasks, calendar, document scanning
 - **Learning Progress Tracking**: Course progress, focus time, productivity insights
 - **Smart Notifications**: Contextual reminders and progress updates
 - **Recent Items**: Quick access to recently created content
 
-### 2. **Knowledge Web** (from MindWeb)
+### 🧠 Knowledge Web
 - **Interactive Knowledge Nodes**: Create and organize knowledge with rich content
 - **Visual Knowledge Maps**: See relationships between concepts
 - **AI-Powered Content**: Generate and enhance content using AI
 - **Quiz & Testing System**: Create and take quizzes based on knowledge
 - **Gamification**: XP, levels, achievements, and progress tracking
 
-### 3. **Social Learning Feed** (from TikTik)
+### 📱 Social Learning Feed
 - **Vertical Video Feed**: Educational content, tutorials, knowledge sharing
 - **Social Interactions**: Like, comment, share, and follow creators
 - **Content Creation**: Record educational videos, tutorials, explanations
 - **Discover Page**: Find new topics, creators, and learning paths
 - **Collaborative Learning**: Study groups, shared knowledge spaces
 
-## 📱 App Structure
+## 🏗️ Architecture
 
-### Main Navigation (Bottom Tabs)
-1. **Home** - Personalized dashboard with quick actions and recent items
-2. **Learn** - Knowledge web and learning content
-3. **Create** - Content creation tools (camera, notes, knowledge nodes)
-4. **Discover** - Social feed and content exploration
-5. **Profile** - User profile, achievements, and settings
+### Tech Stack
+- **Frontend**: React Native with Expo
+- **State Management**: Zustand with persistence
+- **Navigation**: React Navigation
+- **Styling**: NativeWind (Tailwind CSS for React Native)
+- **Icons**: Lucide React Native
+- **Backend**: PocketBase + Supabase
+- **AI**: OpenAI API integration
 
-### Key Screens
-
-#### 1. Home Dashboard
-- Quick action tiles (New Note, Tasks, Calendar, Scan)
-- Learning progress overview
-- Recent knowledge nodes and content
-- Productivity insights and focus time
-- Quick capture FAB for instant note-taking
-
-#### 2. Knowledge Web
-- Interactive 3D knowledge map
-- Node creation and editing
-- AI-powered content generation
-- Category and tag organization
-- Visual relationship mapping
-
-#### 3. Social Learning Feed
-- Vertical swipeable video feed
-- Educational content from creators
-- Interactive elements (like, comment, share)
-- Topic-based content filtering
-- Learning path recommendations
-
-#### 4. Content Creation
-- Camera interface for video recording
-- Note-taking with rich text and media
-- Knowledge node creation
-- Quiz generation from content
-- AI assistance for content enhancement
-
-#### 5. Profile & Analytics
-- User achievements and level progression
-- Learning statistics and progress
-- Content creation history
-- Social connections and following
-- Settings and preferences
+### Project Structure
+```
+MindFlow/
+├── src/
+│   ├── components/          # Reusable UI components
+│   ├── screens/            # Main app screens
+│   ├── store/              # Zustand state management
+│   ├── types/              # TypeScript type definitions
+│   ├── services/           # API and external services
+│   ├── hooks/              # Custom React hooks
+│   └── utils/              # Utility functions
+├── assets/                 # Images, fonts, etc.
+├── app.json               # Expo configuration
+└── package.json           # Dependencies
+```
 
 ## 🎨 Design System
 
@@ -84,72 +72,119 @@ MindFlow is a React Native app that combines productivity management, knowledge 
 - **Headings**: Inter Bold
 - **Body**: Inter Regular
 - **Code**: JetBrains Mono
-- **Icons**: Lucide React Native
 
-### UI Components
-- **Cards**: Elevated surfaces with subtle shadows
-- **Buttons**: Gradient backgrounds with smooth animations
-- **Navigation**: Bottom tabs with active state indicators
-- **Modals**: Slide-up sheets for content creation
-- **Animations**: Smooth transitions and micro-interactions
+## 📱 App Navigation
 
-## 🔧 Technical Stack
+### Main Tabs
+1. **Home** - Personalized dashboard with quick actions
+2. **Learn** - Knowledge web and learning content
+3. **Create** - Content creation tools
+4. **Discover** - Social feed and content exploration
+5. **Profile** - User profile, achievements, and settings
 
-### Frontend
-- **React Native** with Expo
-- **TypeScript** for type safety
-- **React Navigation** for routing
-- **Reanimated** for smooth animations
-- **React Query** for data management
+## 🚀 Getting Started
 
-### Backend & Database
-- **PocketBase** for backend services
-- **SQLite** for local storage
-- **Supabase** for real-time features
-- **OpenAI API** for AI features
+### Prerequisites
+- Node.js (v18 or higher)
+- Expo CLI
+- iOS Simulator or Android Emulator (optional)
 
-### State Management
-- **Zustand** for global state
-- **React Query** for server state
-- **AsyncStorage** for local persistence
+### Installation
 
-### UI Libraries
-- **NativeWind** (Tailwind CSS for React Native)
-- **React Native Elements** for base components
-- **Lottie** for complex animations
-- **React Native SVG** for custom icons
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd MindFlow
+   ```
 
-## 🚀 Key Features
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### 1. Unified Knowledge Management
-- Create knowledge nodes with rich content (text, images, videos)
-- Organize knowledge in visual webs and hierarchies
-- AI-powered content generation and enhancement
-- Cross-reference and link related concepts
+3. **Start the development server**
+   ```bash
+   npm start
+   ```
 
-### 2. Social Learning Experience
-- Share knowledge through short-form videos
-- Follow creators and topics of interest
-- Collaborative learning spaces and study groups
-- Gamified learning with XP and achievements
+4. **Run on device/simulator**
+   ```bash
+   # iOS
+   npm run ios
+   
+   # Android
+   npm run android
+   
+   # Web
+   npm run web
+   ```
 
-### 3. Productivity Integration
-- Quick capture for ideas and notes
-- Task management with learning context
-- Calendar integration with study sessions
-- Focus time tracking and productivity insights
+### Environment Setup
 
-### 4. AI-Powered Features
-- Content generation from prompts
+1. **Create environment file**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configure API keys**
+   ```env
+   OPENAI_API_KEY=your_openai_api_key
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+## 🎯 Core Components
+
+### HomeDashboard
+The main dashboard that combines productivity features with learning insights:
+- Quick action tiles for common tasks
+- Learning progress overview
+- Recent knowledge nodes and content
+- Productivity insights and focus time tracking
+
+### SocialFeed
+TikTok-style vertical feed for educational content:
+- Swipeable video/content feed
+- Social interactions (like, comment, share)
+- Content type badges (video, quiz, note)
+- Creator profiles and following system
+
+### KnowledgeWeb
+Interactive knowledge management system:
+- 3D knowledge node visualization
+- AI-powered content generation
 - Quiz creation from knowledge nodes
-- Smart recommendations for learning paths
-- Automated content enhancement
+- Visual relationship mapping
 
-### 5. Gamification System
-- Experience points for learning activities
-- Level progression and achievements
-- Streak tracking for consistent learning
-- Leaderboards and social competition
+## 🔧 Development
+
+### Code Style
+- TypeScript for type safety
+- ESLint for code linting
+- Prettier for code formatting
+- Conventional commits for version control
+
+### Testing
+```bash
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Building
+```bash
+# Build for production
+npm run build
+
+# Build for specific platform
+npm run build:ios
+npm run build:android
+```
 
 ## 📊 Data Models
 
@@ -181,8 +216,6 @@ interface KnowledgeNode {
   position: { x: number; y: number; z: number };
   connections: string[];
   creator: string;
-  createdAt: Date;
-  updatedAt: Date;
   media: Media[];
 }
 ```
@@ -191,7 +224,7 @@ interface KnowledgeNode {
 ```typescript
 interface Content {
   id: string;
-  type: 'video' | 'note' | 'quiz';
+  type: 'video' | 'note' | 'quiz' | 'knowledge';
   title: string;
   description: string;
   media: Media[];
@@ -201,65 +234,80 @@ interface Content {
   shares: number;
   tags: string[];
   relatedNodes: string[];
-  createdAt: Date;
 }
 ```
 
-## 🎯 User Journey
+## 🎮 Gamification System
 
-### New User Onboarding
-1. **Welcome Screen**: App introduction and value proposition
-2. **Profile Setup**: Basic information and learning preferences
-3. **Interest Selection**: Choose topics and categories
-4. **First Knowledge Node**: Create initial knowledge with AI assistance
-5. **Tutorial**: Guided tour of key features
+### Experience Points (XP)
+- **Content Creation**: 10-50 XP
+- **Learning Activities**: 5-25 XP
+- **Social Interactions**: 2-10 XP
+- **Achievements**: 100-500 XP
 
-### Daily Usage Flow
-1. **Dashboard Check**: Review progress and quick actions
-2. **Content Consumption**: Browse social feed and knowledge web
-3. **Content Creation**: Record videos, create notes, or add knowledge
-4. **Learning Activities**: Take quizzes, explore new topics
-5. **Social Interaction**: Engage with content and other learners
+### Levels
+- Level 1: 0 XP
+- Level 2: 1,000 XP
+- Level 3: 2,000 XP
+- And so on...
 
-### Learning Progression
-1. **Discovery**: Find new topics and creators
-2. **Consumption**: Watch videos and read content
-3. **Creation**: Generate own knowledge and content
-4. **Sharing**: Share knowledge with the community
-5. **Collaboration**: Work with others on shared projects
+### Achievements
+- **First Steps**: Create your first knowledge node
+- **Social Butterfly**: Follow 10 creators
+- **Quiz Master**: Complete 50 quizzes
+- **Content Creator**: Share 25 pieces of content
+- **Knowledge Seeker**: Create 100 knowledge nodes
 
-## 🔮 Future Enhancements
+## 🔮 Future Roadmap
 
-### Phase 2 Features
-- **AR Knowledge Visualization**: View knowledge webs in augmented reality
-- **Voice-to-Knowledge**: Create knowledge nodes through voice input
-- **Collaborative Knowledge Spaces**: Team-based knowledge building
-- **Advanced Analytics**: Detailed learning insights and recommendations
+### Phase 2 (Q2 2024)
+- [ ] AR Knowledge Visualization
+- [ ] Voice-to-Knowledge input
+- [ ] Collaborative Knowledge Spaces
+- [ ] Advanced Analytics Dashboard
 
-### Phase 3 Features
-- **AI Tutor**: Personalized learning assistant
-- **Virtual Study Groups**: Real-time collaborative learning
-- **Knowledge Marketplace**: Monetize and purchase knowledge content
-- **Integration Ecosystem**: Connect with other learning platforms
+### Phase 3 (Q3 2024)
+- [ ] AI Tutor integration
+- [ ] Virtual Study Groups
+- [ ] Knowledge Marketplace
+- [ ] Platform Integrations
 
-## 💡 Unique Value Propositions
+### Phase 4 (Q4 2024)
+- [ ] Advanced AI features
+- [ ] Mobile AR capabilities
+- [ ] Enterprise features
+- [ ] API for third-party integrations
 
-1. **Unified Experience**: One app for productivity, learning, and social interaction
-2. **Visual Knowledge**: Intuitive visual representation of knowledge relationships
-3. **AI Integration**: Seamless AI assistance throughout the learning process
-4. **Social Learning**: Learn from and with others in a gamified environment
-5. **Mobile-First**: Optimized for mobile learning and content creation
+## 🤝 Contributing
 
-## 🎨 Brand Identity
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### Name: MindFlow
-- **Mind**: Represents knowledge, learning, and intellectual growth
-- **Flow**: Suggests smooth, continuous learning and productivity
-- **Combined**: Implies the seamless flow of ideas and knowledge
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-### Tagline: "Where Knowledge Flows"
-- Emphasizes the fluid, dynamic nature of learning
-- Suggests continuous improvement and growth
-- Implies social sharing and collaboration
+## 📄 License
 
-This unified platform would create a unique learning ecosystem that combines the best aspects of productivity tools, knowledge management systems, and social learning platforms, all optimized for mobile use and enhanced with AI capabilities. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **IHSAN-Dashboard**: For productivity and dashboard inspiration
+- **MindWeb**: For knowledge management concepts
+- **TikTik**: For social feed and content creation patterns
+- **OpenAI**: For AI integration capabilities
+- **React Native Community**: For the amazing ecosystem
+
+## 📞 Support
+
+- **Documentation**: [docs.mindflow.app](https://docs.mindflow.app)
+- **Issues**: [GitHub Issues](https://github.com/mindflow/issues)
+- **Discord**: [Join our community](https://discord.gg/mindflow)
+- **Email**: support@mindflow.app
+
+---
+
+**Start your learning journey with MindFlow today! 🚀**
