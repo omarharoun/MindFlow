@@ -38,6 +38,12 @@
     "scheme": "mindflow",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "http://164.92.139.226:8081",
+        "headOrigin": "http://164.92.139.226:8081"
+      }
     }
   }
 } 

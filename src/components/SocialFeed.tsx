@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -34,6 +35,8 @@ import {
   Eye,
   ThumbsUp,
   ThumbsDown,
+  Search,
+  Filter,
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 import { Content, User as UserType } from '../types';
@@ -48,6 +51,7 @@ interface FeedItemProps {
   onShare: () => void;
   onUserPress: () => void;
   onBookmark: () => void;
+  isActive: boolean;
 }
 
 const FeedItem: React.FC<FeedItemProps> = ({
@@ -58,6 +62,7 @@ const FeedItem: React.FC<FeedItemProps> = ({
   onShare,
   onUserPress,
   onBookmark,
+  isActive,
 }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -68,6 +73,15 @@ const FeedItem: React.FC<FeedItemProps> = ({
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [commentText, setCommentText] = useState('');
+
+  // Auto-play when item becomes active
+  useEffect(() => {
+    if (isActive && content.type === 'video') {
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(false);
+    }
+  }, [isActive, content.type]);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -108,7 +122,6 @@ const FeedItem: React.FC<FeedItemProps> = ({
 
   const submitComment = () => {
     if (commentText.trim()) {
-      // TODO: Add comment to content
       setCommentText('');
       setShowComments(false);
       Alert.alert('Comment Added', 'Your comment has been posted!');
@@ -141,29 +154,41 @@ const FeedItem: React.FC<FeedItemProps> = ({
     }
   };
 
+  const getContentTypeLabel = () => {
+    switch (content.type) {
+      case 'video':
+        return 'VIDEO';
+      case 'quiz':
+        return 'QUIZ';
+      case 'note':
+        return 'NOTE';
+      default:
+        return 'CONTENT';
+    }
+  };
+
   const ContentIcon = getContentIcon();
 
   return (
     <View style={styles.feedItem}>
       {/* Background Video/Image */}
       <View style={styles.backgroundContainer}>
-        {content.media.length > 0 && content.media[0].type === 'video' ? (
-          <View style={styles.videoContainer}>
-            <View style={styles.videoPlaceholder}>
-              <ContentIcon size={48} color="#FFFFFF" strokeWidth={2} />
-            </View>
-            {/* Video Progress Bar */}
+        <LinearGradient
+          colors={['#1E3A8A', '#3B82F6', '#60A5FA']}
+          style={styles.backgroundGradient}
+        >
+          <View style={styles.contentPlaceholder}>
+            <ContentIcon size={64} color="#FFFFFF" strokeWidth={2} />
+            <Text style={styles.contentTypeLabel}>{getContentTypeLabel()}</Text>
+          </View>
+          
+          {/* Video Progress Bar */}
+          {content.type === 'video' && (
             <View style={styles.videoProgress}>
               <View style={[styles.videoProgressBar, { width: '45%' }]} />
             </View>
-          </View>
-        ) : (
-          <View style={styles.imageContainer}>
-            <View style={styles.imagePlaceholder}>
-              <BookOpen size={48} color="#FFFFFF" strokeWidth={2} />
-            </View>
-          </View>
-        )}
+          )}
+        </LinearGradient>
       </View>
 
       {/* Content Overlay */}
@@ -172,7 +197,7 @@ const FeedItem: React.FC<FeedItemProps> = ({
         <View style={styles.topBar}>
           <View style={styles.contentTypeBadge}>
             <Text style={[styles.contentTypeText, { color: getContentTypeColor() }]}>
-              {content.type.toUpperCase()}
+              {getContentTypeLabel()}
             </Text>
           </View>
           <TouchableOpacity style={styles.moreButton} onPress={handleMore}>
@@ -187,7 +212,7 @@ const FeedItem: React.FC<FeedItemProps> = ({
             <View style={styles.avatar}>
               <User size={20} color="#FFFFFF" strokeWidth={2} />
             </View>
-            <Text style={styles.creatorName}>{creator.username}</Text>
+            <Text style={styles.creatorName}>@{creator.username}</Text>
             <View style={styles.followButton}>
               <Text style={styles.followText}>Follow</Text>
             </View>
@@ -198,81 +223,82 @@ const FeedItem: React.FC<FeedItemProps> = ({
             <Text style={styles.description} numberOfLines={3}>
               {content.description}
             </Text>
-            <View style={styles.tagsContainer}>
-              {content.tags.slice(0, 3).map((tag, index) => (
-                <View key={index} style={styles.tag}>
-                  <Tag size={12} color="#FFFFFF" strokeWidth={2} />
-                  <Text style={styles.tagText}>#{tag}</Text>
-                </View>
-              ))}
-            </View>
           </View>
 
           {/* Music Info */}
-          <View style={styles.musicInfo}>
+          <View style={styles.musicContainer}>
             <Music size={16} color="#FFFFFF" strokeWidth={2} />
-            <Text style={styles.musicText}>
-              📚 {content.type === 'quiz' ? 'Quiz' : content.type === 'note' ? 'Knowledge' : 'Learning'} • 
-              {content.duration ? ` ${Math.floor(content.duration / 60)}:${(content.duration % 60).toString().padStart(2, '0')}` : ''}
+            <Text style={styles.musicText} numberOfLines={1}>
+              {content.type === 'video' ? 'Original Sound' : 'MindFlow Learning'}
             </Text>
           </View>
         </View>
 
-        {/* Right Side Actions */}
-        <View style={styles.rightActions}>
-          {/* User Avatar */}
-          <TouchableOpacity style={styles.userAvatar} onPress={onUserPress}>
-            <User size={24} color="#FFFFFF" strokeWidth={2} />
-          </TouchableOpacity>
-
+        {/* Right Side Interaction Buttons */}
+        <View style={styles.interactionButtons}>
           {/* Like Button */}
-          <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-            <Heart 
-              size={28} 
-              color={isLiked ? '#FF3B30' : '#FFFFFF'} 
-              fill={isLiked ? '#FF3B30' : 'none'}
-              strokeWidth={2} 
-            />
-            <Text style={styles.actionCount}>{content.likes}</Text>
+          <TouchableOpacity style={styles.interactionButton} onPress={handleLike}>
+            <View style={styles.iconContainer}>
+              <Heart 
+                size={28} 
+                color={isLiked ? "#FF3B30" : "#FFFFFF"} 
+                fill={isLiked ? "#FF3B30" : "none"}
+                strokeWidth={2} 
+              />
+            </View>
+            <Text style={[styles.interactionCount, isLiked && styles.likedText]}>
+              {content.likes.toLocaleString()}
+            </Text>
           </TouchableOpacity>
 
           {/* Comment Button */}
-          <TouchableOpacity style={styles.actionButton} onPress={handleComment}>
-            <MessageCircle size={28} color="#FFFFFF" strokeWidth={2} />
-            <Text style={styles.actionCount}>{content.comments?.length || 0}</Text>
+          <TouchableOpacity style={styles.interactionButton} onPress={handleComment}>
+            <View style={styles.iconContainer}>
+              <MessageCircle size={28} color="#FFFFFF" strokeWidth={2} />
+            </View>
+            <Text style={styles.interactionCount}>
+              {content.comments.length.toLocaleString()}
+            </Text>
           </TouchableOpacity>
 
           {/* Share Button */}
-          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-            <Share size={28} color="#FFFFFF" strokeWidth={2} />
-            <Text style={styles.actionCount}>{content.shares}</Text>
+          <TouchableOpacity style={styles.interactionButton} onPress={handleShare}>
+            <View style={styles.iconContainer}>
+              <Share size={28} color="#FFFFFF" strokeWidth={2} />
+            </View>
+            <Text style={styles.interactionCount}>
+              {content.shares.toLocaleString()}
+            </Text>
           </TouchableOpacity>
 
           {/* Bookmark Button */}
-          <TouchableOpacity style={styles.actionButton} onPress={handleBookmark}>
-            <Bookmark 
-              size={28} 
-              color={isBookmarked ? '#FFD700' : '#FFFFFF'} 
-              fill={isBookmarked ? '#FFD700' : 'none'}
-              strokeWidth={2} 
-            />
+          <TouchableOpacity style={styles.interactionButton} onPress={handleBookmark}>
+            <View style={styles.iconContainer}>
+              <Bookmark 
+                size={28} 
+                color={isBookmarked ? "#FFD700" : "#FFFFFF"} 
+                fill={isBookmarked ? "#FFD700" : "none"}
+                strokeWidth={2} 
+              />
+            </View>
+            <Text style={[styles.interactionCount, isBookmarked && styles.bookmarkedText]}>
+              Save
+            </Text>
           </TouchableOpacity>
 
-          {/* Play/Pause Button */}
+          {/* Play/Pause Button for Videos */}
           {content.type === 'video' && (
-            <TouchableOpacity style={styles.actionButton} onPress={handlePlayPause}>
-              <ContentIcon size={28} color="#FFFFFF" strokeWidth={2} />
-            </TouchableOpacity>
-          )}
-
-          {/* Mute Button */}
-          {content.type === 'video' && (
-            <TouchableOpacity style={styles.actionButton} onPress={handleMuteToggle}>
-              {isMuted ? (
-                <VolumeX size={28} color="#FFFFFF" strokeWidth={2} />
-              ) : (
-                <Volume2 size={28} color="#FFFFFF" strokeWidth={2} />
-              )}
+            <TouchableOpacity style={styles.interactionButton} onPress={handlePlayPause}>
+              <View style={styles.iconContainer}>
+                {isPlaying ? (
+                  <Pause size={28} color="#FFFFFF" strokeWidth={2} />
+                ) : (
+                  <Play size={28} color="#FFFFFF" strokeWidth={2} />
+                )}
+              </View>
+              <Text style={styles.interactionCount}>
+                {isPlaying ? 'Pause' : 'Play'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -280,7 +306,7 @@ const FeedItem: React.FC<FeedItemProps> = ({
         {/* Love Animation */}
         {showLoveAnimation && (
           <View style={styles.loveAnimation}>
-            <Text style={styles.loveText}>❤️</Text>
+            <Text style={styles.loveEmoji}>❤️</Text>
           </View>
         )}
       </View>
@@ -288,116 +314,90 @@ const FeedItem: React.FC<FeedItemProps> = ({
       {/* Comments Modal */}
       <Modal
         visible={showComments}
-        transparent={true}
         animationType="slide"
+        transparent={true}
         onRequestClose={() => setShowComments(false)}
       >
-        <View style={styles.commentsModal}>
-          <View style={styles.commentsHeader}>
-            <Text style={styles.commentsTitle}>Comments</Text>
-            <TouchableOpacity onPress={() => setShowComments(false)}>
-              <Text style={styles.closeButton}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.commentsList}>
-            {content.comments?.map((comment, index) => (
-              <View key={index} style={styles.commentItem}>
-                <View style={styles.commentAvatar}>
-                  <User size={16} color="#FFFFFF" strokeWidth={2} />
+        <View style={styles.modalOverlay}>
+          <View style={styles.commentsModal}>
+            <View style={styles.commentsHeader}>
+              <Text style={styles.commentsTitle}>Comments</Text>
+              <TouchableOpacity onPress={() => setShowComments(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.commentsList}>
+              {content.comments.map((comment) => (
+                <View key={comment.id} style={styles.commentItem}>
+                  <View style={styles.commentAvatar}>
+                    <User size={16} color="#FFFFFF" strokeWidth={2} />
+                  </View>
+                  <View style={styles.commentContent}>
+                    <Text style={styles.commentAuthor}>User {comment.author}</Text>
+                    <Text style={styles.commentText}>{comment.content}</Text>
+                    <Text style={styles.commentTime}>
+                      {comment.createdAt.toLocaleDateString()}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.commentContent}>
-                  <Text style={styles.commentAuthor}>User {index + 1}</Text>
-                  <Text style={styles.commentText}>{comment.content}</Text>
-                  <Text style={styles.commentTime}>
-                    {new Date(comment.createdAt).toLocaleDateString()}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-          
-          <View style={styles.commentInput}>
-            <TextInput
-              style={styles.input}
-              placeholder="Add a comment..."
-              placeholderTextColor="#666666"
-              value={commentText}
-              onChangeText={setCommentText}
-              multiline
-            />
-            <TouchableOpacity style={styles.sendButton} onPress={submitComment}>
-              <Send size={20} color="#007AFF" strokeWidth={2} />
-            </TouchableOpacity>
+              ))}
+            </ScrollView>
+            
+            <View style={styles.commentInput}>
+              <TextInput
+                style={styles.input}
+                placeholder="Add a comment..."
+                placeholderTextColor="#666666"
+                value={commentText}
+                onChangeText={setCommentText}
+              />
+              <TouchableOpacity style={styles.sendButton} onPress={submitComment}>
+                <Send size={20} color="#007AFF" strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
 
-      {/* Share Menu Modal */}
+      {/* Share Modal */}
       <Modal
         visible={showShareMenu}
+        animationType="slide"
         transparent={true}
-        animationType="fade"
         onRequestClose={() => setShowShareMenu(false)}
       >
-        <TouchableOpacity
-          style={styles.shareModalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowShareMenu(false)}
-        >
-          <View style={styles.shareModalContent}>
-            <Text style={styles.shareModalTitle}>Share to</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.shareModal}>
+            <Text style={styles.shareTitle}>Share to</Text>
             <View style={styles.shareOptions}>
               <TouchableOpacity style={styles.shareOption}>
-                <View style={styles.shareOptionIcon}>
-                  <Copy size={24} color="#FFFFFF" strokeWidth={2} />
+                <View style={styles.shareIcon}>
+                  <MessageCircle size={24} color="#007AFF" strokeWidth={2} />
+                </View>
+                <Text style={styles.shareOptionText}>Message</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.shareOption}>
+                <View style={styles.shareIcon}>
+                  <Copy size={24} color="#007AFF" strokeWidth={2} />
                 </View>
                 <Text style={styles.shareOptionText}>Copy Link</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.shareOption}>
-                <View style={styles.shareOptionIcon}>
-                  <ExternalLink size={24} color="#FFFFFF" strokeWidth={2} />
+                <View style={styles.shareIcon}>
+                  <ExternalLink size={24} color="#007AFF" strokeWidth={2} />
                 </View>
-                <Text style={styles.shareOptionText}>Share</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.shareOption}>
-                <View style={styles.shareOptionIcon}>
-                  <Bookmark size={24} color="#FFFFFF" strokeWidth={2} />
-                </View>
-                <Text style={styles.shareOptionText}>Save</Text>
+                <Text style={styles.shareOptionText}>More</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* More Menu Modal */}
-      <Modal
-        visible={showMoreMenu}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowMoreMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.moreModalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowMoreMenu(false)}
-        >
-          <View style={styles.moreModalContent}>
-            <TouchableOpacity style={styles.moreOption}>
-              <ThumbsUp size={20} color="#34C759" strokeWidth={2} />
-              <Text style={styles.moreOptionText}>Like</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.moreOption}>
-              <ThumbsDown size={20} color="#FF3B30" strokeWidth={2} />
-              <Text style={styles.moreOptionText}>Dislike</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.moreOption}>
-              <Flag size={20} color="#FF9500" strokeWidth={2} />
-              <Text style={styles.moreOptionText}>Report</Text>
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={() => setShowShareMenu(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -406,6 +406,7 @@ const FeedItem: React.FC<FeedItemProps> = ({
 const SocialFeed: React.FC = () => {
   const { feedItems, likeContent, addExperience } = useStore();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedFeed, setSelectedFeed] = useState<'ForYou' | 'Following'>('ForYou');
 
   // Mock data for demonstration
   const mockFeedItems = [
@@ -558,38 +559,80 @@ const SocialFeed: React.FC = () => {
     console.log('View user profile:', userId);
   };
 
-  const onGestureEvent = (event: any) => {
-    // Simple swipe detection without PanGestureHandler
-    console.log('Gesture detected');
-  };
+  const renderFeedItem = ({ item, index }: { item: any; index: number }) => (
+    <View style={styles.feedItemContainer}>
+      <FeedItem
+        content={item.content}
+        creator={item.creator}
+        onLike={() => handleLike(item.content.id)}
+        onComment={() => handleComment(item.content.id)}
+        onShare={() => handleShare(item.content.id)}
+        onUserPress={() => handleUserPress(item.creator.id)}
+        onBookmark={() => handleBookmark(item.content.id)}
+        isActive={index === currentIndex}
+      />
+    </View>
+  );
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setCurrentIndex(viewableItems[0].index);
+    }
+  }, []);
+
+  const viewabilityConfig = useMemo(() => ({
+    itemVisiblePercentThreshold: 50,
+  }), []);
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Discover</Text>
-        <TouchableOpacity style={styles.searchButton}>
-          <Text style={styles.searchText}>🔍</Text>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.headerButton}>
+            <Search size={20} color="#FFFFFF" strokeWidth={2} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton}>
+            <Filter size={20} color="#FFFFFF" strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Feed Toggle */}
+      <View style={styles.feedToggle}>
+        <TouchableOpacity
+          style={[styles.toggleButton, selectedFeed === 'ForYou' && styles.activeToggleButton]}
+          onPress={() => setSelectedFeed('ForYou')}
+        >
+          <Text style={[styles.toggleText, selectedFeed === 'ForYou' && styles.activeToggleText]}>
+            For You
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toggleButton, selectedFeed === 'Following' && styles.activeToggleButton]}
+          onPress={() => setSelectedFeed('Following')}
+        >
+          <Text style={[styles.toggleText, selectedFeed === 'Following' && styles.activeToggleText]}>
+            Following
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.feedContainer}>
-        {mockFeedItems.map((item, index) => (
-          <View key={item.id} style={[
-            styles.feedItemContainer,
-            { transform: [{ translateY: (index - currentIndex) * height }] }
-          ]}>
-            <FeedItem
-              content={item.content}
-              creator={item.creator}
-              onLike={() => handleLike(item.content.id)}
-              onComment={() => handleComment(item.content.id)}
-              onShare={() => handleShare(item.content.id)}
-              onUserPress={() => handleUserPress(item.creator.id)}
-              onBookmark={() => handleBookmark(item.content.id)}
-            />
-          </View>
-        ))}
-      </View>
+      {/* Feed */}
+      <FlatList
+        data={mockFeedItems}
+        renderItem={renderFeedItem}
+        keyExtractor={(item) => item.id}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        snapToInterval={height}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        style={styles.feedList}
+      />
     </SafeAreaView>
   );
 };
@@ -604,29 +647,51 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
-  searchButton: {
-    padding: 8,
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 15,
   },
-  searchText: {
-    fontSize: 20,
+  headerButton: {
+    padding: 5,
   },
-  feedContainer: {
+  feedToggle: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  toggleButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  activeToggleButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  toggleText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: '#FFFFFF',
+  },
+  activeToggleText: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter-Bold',
+  },
+  feedList: {
     flex: 1,
   },
   feedItemContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    height: height,
+    backgroundColor: '#000000',
   },
   feedItem: {
     flex: 1,
@@ -635,47 +700,35 @@ const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
   },
-  videoContainer: {
+  backgroundGradient: {
     flex: 1,
-    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  videoPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
+  contentPlaceholder: {
     alignItems: 'center',
+  },
+  contentTypeLabel: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginTop: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   videoProgress: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+    bottom: 0,
+    left: 0,
+    right: 0,
     height: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 1,
   },
   videoProgressBar: {
     height: '100%',
-    backgroundColor: '#FF3B30',
-    borderRadius: 1,
-  },
-  imageContainer: {
-    flex: 1,
-    backgroundColor: '#1E293B',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   contentOverlay: {
     position: 'absolute',
@@ -683,26 +736,26 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    padding: 20,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 40,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   contentTypeBadge: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   contentTypeText: {
     fontSize: 12,
     fontFamily: 'Inter-Bold',
   },
   moreButton: {
-    padding: 8,
+    padding: 5,
   },
   bottomContent: {
     position: 'absolute',
@@ -713,7 +766,7 @@ const styles = StyleSheet.create({
   creatorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 15,
   },
   avatar: {
     width: 40,
@@ -722,7 +775,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   creatorName: {
     fontSize: 16,
@@ -732,79 +785,64 @@ const styles = StyleSheet.create({
   },
   followButton: {
     backgroundColor: '#FF3B30',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   followText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
   descriptionContainer: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   description: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#FFFFFF',
-    lineHeight: 22,
-    marginBottom: 8,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  tagText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#FFFFFF',
-  },
-  musicInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  musicText: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
-    opacity: 0.8,
+    lineHeight: 20,
   },
-  rightActions: {
+  musicContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  musicText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#FFFFFF',
+    marginLeft: 8,
+    flex: 1,
+  },
+  interactionButtons: {
     position: 'absolute',
     right: 20,
-    bottom: 100,
+    bottom: 120,
     alignItems: 'center',
     gap: 20,
   },
-  userAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#007AFF',
+  interactionButton: {
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 5,
   },
-  actionButton: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionCount: {
+  interactionCount: {
     fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#FFFFFF',
+  },
+  likedText: {
+    color: '#FF3B30',
+  },
+  bookmarkedText: {
+    color: '#FFD700',
   },
   loveAnimation: {
     position: 'absolute',
@@ -813,16 +851,19 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -50 }, { translateY: -50 }],
     zIndex: 1000,
   },
-  loveText: {
+  loveEmoji: {
     fontSize: 80,
   },
-  // Comments Modal Styles
-  commentsModal: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  commentsModal: {
     backgroundColor: '#1E293B',
-    marginTop: 100,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    height: '70%',
   },
   commentsHeader: {
     flexDirection: 'row',
@@ -838,7 +879,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   closeButton: {
-    fontSize: 24,
+    fontSize: 20,
     color: '#FFFFFF',
   },
   commentsList: {
@@ -847,7 +888,7 @@ const styles = StyleSheet.create({
   },
   commentItem: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 15,
   },
   commentAvatar: {
     width: 32,
@@ -856,7 +897,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   commentContent: {
     flex: 1,
@@ -865,7 +906,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   commentText: {
     fontSize: 14,
@@ -880,7 +921,6 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flexDirection: 'row',
-    alignItems: 'center',
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#334155',
@@ -889,77 +929,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#334155',
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
-    marginRight: 12,
+    marginRight: 10,
   },
   sendButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  // Share Menu Modal Styles
-  shareModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
-  },
-  shareModalContent: {
+  shareModal: {
     backgroundColor: '#1E293B',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 20,
-    paddingBottom: 40,
   },
-  shareModalTitle: {
-    fontSize: 20,
+  shareTitle: {
+    fontSize: 18,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginBottom: 20,
     textAlign: 'center',
+    marginBottom: 20,
   },
   shareOptions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    marginBottom: 20,
   },
   shareOption: {
     alignItems: 'center',
   },
-  shareOptionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#007AFF',
+  shareIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#334155',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   shareOptionText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
   },
-  // More Menu Modal Styles
-  moreModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
+  cancelButton: {
+    backgroundColor: '#334155',
+    borderRadius: 10,
+    paddingVertical: 15,
     alignItems: 'center',
   },
-  moreModalContent: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 20,
-    minWidth: 200,
-  },
-  moreOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
-  },
-  moreOptionText: {
+  cancelButtonText: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Medium',
     color: '#FFFFFF',
   },
 });

@@ -42,6 +42,10 @@ interface AppState {
   updateKnowledgeNode: (id: string, updates: Partial<KnowledgeNode>) => void;
   deleteKnowledgeNode: (id: string) => void;
   setSelectedNode: (node: KnowledgeNode | null) => void;
+  connectNodes: (sourceId: string, targetId: string, relationship?: string) => void;
+  disconnectNodes: (sourceId: string, targetId: string) => void;
+  likeKnowledgeNode: (nodeId: string) => void;
+  viewKnowledgeNode: (nodeId: string) => void;
   
   // Content actions
   addFeedItem: (content: Content) => void;
@@ -125,6 +129,34 @@ export const useStore = create<AppState>()(
         })),
       
       setSelectedNode: (node) => set({ selectedNode: node }),
+      
+      connectNodes: (sourceId, targetId, relationship) =>
+        set((state) => ({
+          knowledgeNodes: state.knowledgeNodes.map(node =>
+            node.id === sourceId ? { ...node, connections: [...node.connections, targetId] } : node
+          ),
+        })),
+      
+      disconnectNodes: (sourceId, targetId) =>
+        set((state) => ({
+          knowledgeNodes: state.knowledgeNodes.map(node =>
+            node.id === sourceId ? { ...node, connections: node.connections.filter(c => c !== targetId) } : node
+          ),
+        })),
+      
+      likeKnowledgeNode: (nodeId) =>
+        set((state) => ({
+          knowledgeNodes: state.knowledgeNodes.map(node =>
+            node.id === nodeId ? { ...node, likes: node.likes + 1 } : node
+          ),
+        })),
+      
+      viewKnowledgeNode: (nodeId) =>
+        set((state) => ({
+          knowledgeNodes: state.knowledgeNodes.map(node =>
+            node.id === nodeId ? { ...node, views: node.views + 1 } : node
+          ),
+        })),
       
       // Content actions
       addFeedItem: (content) =>
@@ -272,17 +304,6 @@ export const useStore = create<AppState>()(
           await AsyncStorage.removeItem(name);
         },
       },
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-        knowledgeNodes: state.knowledgeNodes,
-        savedContent: state.savedContent,
-        tasks: state.tasks,
-        notes: state.notes,
-        quizHistory: state.quizHistory,
-        theme: state.theme,
-        notifications: state.notifications,
-      }),
     }
   )
 ); 
