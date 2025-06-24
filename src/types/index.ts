@@ -20,6 +20,7 @@ export interface UserPreferences {
   aiEnabled: boolean;
   autoSave: boolean;
   language: string;
+  openAIApiKey?: string;
 }
 
 export interface Achievement {

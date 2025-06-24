@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Dimensions,
   Modal,
   Alert,
+  TextInput,
+  FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -17,6 +19,7 @@ import {
   CheckSquare,
   Calendar,
   Camera,
+  Video,
   BookOpen,
   Zap,
   TrendingUp,
@@ -26,8 +29,12 @@ import {
   Target,
   Award,
   X,
+  Trash2,
+  Edit3,
+  Check,
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -69,77 +76,220 @@ const DashboardTile: React.FC<DashboardTileProps> = ({
   </TouchableOpacity>
 );
 
+// Add Event interface
+interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  date: Date;
+  category: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const HomeDashboard: React.FC = () => {
-  const { user, tasks, notes, knowledgeNodes, addTask, addNote, addExperience } = useStore();
+  const { user, tasks, notes, knowledgeNodes, addTask, addNote, updateTask, deleteTask, addExperience } = useStore();
   const [notifications] = useState(3);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
+  const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
+  const [eventDate, setEventDate] = useState(new Date());
+  const [eventDueDate, setEventDueDate] = useState('');
+  const [eventDueTime, setEventDueTime] = useState('');
+  const [events, setEvents] = useState<Event[]>([]);
+  const router = useRouter();
 
-  const handleAddItem = (type: 'task' | 'note' | 'event' | 'knowledge') => {
+  const handleAddItem = (type: 'task' | 'note' | 'event' | 'knowledge' | 'read') => {
     setShowAddMenu(false);
     
     switch (type) {
       case 'task':
-        const newTask = {
-          id: Date.now().toString(),
-          title: 'New Task',
-          description: '',
-          completed: false,
-          priority: 'medium' as const,
-          category: 'General',
-          tags: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        addTask(newTask);
-        addExperience(10);
-        Alert.alert('Task Added', 'New task created successfully!');
+        setShowTaskModal(true);
         break;
         
       case 'note':
-        const newNote = {
-          id: Date.now().toString(),
-          title: 'New Note',
-          content: '',
-          category: 'General',
-          tags: [],
-          media: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isPinned: false,
-        };
-        addNote(newNote);
-        addExperience(10);
-        Alert.alert('Note Added', 'New note created successfully!');
+        setShowNoteModal(true);
         break;
         
       case 'event':
-        addExperience(10);
-        Alert.alert('Event Added', 'New event created successfully!');
+        setShowEventModal(true);
         break;
         
       case 'knowledge':
-        addExperience(10);
-        Alert.alert('Knowledge Node Added', 'New knowledge node created successfully!');
+        router.push('/(tabs)/learn');
+        break;
+        
+      case 'read':
+        router.push('/(tabs)/read');
         break;
     }
   };
 
-  const handleTilePress = (title: string) => {
-    // TODO: Navigate to specific sections
-    console.log('Pressed:', title);
+  const handleSaveNote = () => {
+    if (!noteTitle.trim()) {
+      Alert.alert('Error', 'Please enter a title for your note.');
+      return;
+    }
+    
+    const newNote = {
+      id: Date.now().toString(),
+      title: noteTitle,
+      content: noteContent,
+      category: 'General',
+      tags: [],
+      media: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isPinned: false,
+    };
+    
+    addNote(newNote);
+    addExperience(10);
+    setNoteTitle('');
+    setNoteContent('');
+    setShowNoteModal(false);
+    Alert.alert('Note Saved', 'Your note has been saved successfully!');
+  };
+
+  const handleSaveTask = () => {
+    if (!taskTitle.trim()) {
+      Alert.alert('Error', 'Please enter a title for your task.');
+      return;
+    }
+    
+    const newTask = {
+      id: Date.now().toString(),
+      title: taskTitle,
+      description: taskDescription,
+      completed: false,
+      priority: taskPriority,
+      category: 'General',
+      tags: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    addTask(newTask);
+    addExperience(10);
+    setTaskTitle('');
+    setTaskDescription('');
+    setTaskPriority('medium');
+    setShowTaskModal(false);
+    Alert.alert('Task Added', 'Your task has been added successfully!');
+  };
+
+  const handleSaveEvent = () => {
+    if (!eventTitle.trim()) {
+      Alert.alert('Error', 'Please enter a title for your event.');
+      return;
+    }
+
+    if (!eventDueDate.trim() || !eventDueTime.trim()) {
+      Alert.alert('Error', 'Please enter both due date and time.');
+      return;
+    }
+    
+    const newEvent: Event = {
+      id: Date.now().toString(),
+      title: eventTitle,
+      description: eventDescription,
+      date: new Date(`${eventDueDate} ${eventDueTime}`),
+      category: 'General',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    setEvents([newEvent, ...events]);
+    addExperience(15);
+    setEventTitle('');
+    setEventDescription('');
+    setEventDueDate('');
+    setEventDueTime('');
+    setShowEventModal(false);
+    Alert.alert('Event Created', 'Your event has been created successfully!');
+  };
+
+  const handleCompleteTask = (taskId: string) => {
+    updateTask(taskId, { completed: true });
     addExperience(5);
   };
 
-  const pendingTasks = tasks.filter(task => !task.completed).length;
-  const recentNotes = notes.slice(0, 3);
-  const recentNodes = knowledgeNodes.slice(0, 3);
+  const handleDeleteTask = (taskId: string) => {
+    deleteTask(taskId);
+  };
+
+  const handleCompleteAllTasks = () => {
+    const pendingTasks = tasks.filter(task => !task.completed);
+    pendingTasks.forEach(task => {
+      updateTask(task.id, { completed: true });
+    });
+    addExperience(pendingTasks.length * 5);
+    Alert.alert('Tasks Completed', `Completed ${pendingTasks.length} tasks!`);
+  };
+
+  const handleTilePress = (title: string) => {
+    switch (title) {
+      case 'New Note':
+        setShowNoteModal(true);
+        break;
+      case 'Tasks':
+        // Navigate to tasks view or show task modal
+        break;
+      case 'Knowledge':
+        router.push('/(tabs)/learn');
+        break;
+      case 'Add':
+        setShowAddMenu(true);
+        break;
+    }
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
+    if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return '#FF3B30';
+      case 'medium': return '#FF9500';
+      case 'low': return '#34C759';
+      default: return '#FF9500';
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatTime = (date: Date) => {
+    return new Date(date).toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
+  const pendingTasks = tasks.filter(task => !task.completed);
+  const recentNotes = notes.slice(0, 3);
+  const recentNodes = knowledgeNodes.slice(0, 3);
+  const recentEvents = events.slice(0, 3);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -165,7 +315,7 @@ const HomeDashboard: React.FC = () => {
               <Text style={styles.xpText}>{user?.experience || 0} XP</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
+          <TouchableOpacity style={styles.notificationButton} onPress={() => setShowNotifications(true)}>
             <Bell size={24} color="#FFFFFF" strokeWidth={2} />
             {notifications > 0 && (
               <View style={styles.notificationBadge}>
@@ -174,6 +324,25 @@ const HomeDashboard: React.FC = () => {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* Notifications Modal */}
+        <Modal visible={showNotifications} animationType="slide" transparent onRequestClose={() => setShowNotifications(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.notificationsModal}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.modalTitle}>Notifications</Text>
+                <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                  <X size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <View style={{ marginTop: 16 }}>
+                <Text style={{ color: '#fff', marginBottom: 8 }}>• You have {pendingTasks.length} tasks pending</Text>
+                <Text style={{ color: '#fff', marginBottom: 8 }}>• {notes.length} notes created</Text>
+                <Text style={{ color: '#fff' }}>• {knowledgeNodes.length} knowledge nodes</Text>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <ScrollView
           style={styles.scrollView}
@@ -192,216 +361,323 @@ const HomeDashboard: React.FC = () => {
             />
             <DashboardTile
               title="Tasks"
-              subtitle={`${pendingTasks} pending`}
+              subtitle={`${pendingTasks.length} pending`}
               icon={CheckSquare}
               gradientColors={['#34C759', '#28A745']}
               onPress={() => handleTilePress('Tasks')}
             />
             <DashboardTile
-              title="Calendar"
-              subtitle="Today's schedule"
-              icon={Calendar}
-              gradientColors={['#FF9500', '#FF8C00']}
-              onPress={() => handleTilePress('Calendar')}
-            />
-            <DashboardTile
-              title="Scan"
-              subtitle="Document capture"
-              icon={Camera}
-              gradientColors={['#AF52DE', '#9A4BCF']}
-              onPress={() => handleTilePress('Scan')}
-            />
-          </View>
-
-          {/* Learning Section */}
-          <Text style={styles.sectionTitle}>Continue Learning</Text>
-          <View style={styles.tilesGrid}>
-            <DashboardTile
-              title="Knowledge Web"
-              subtitle={`${knowledgeNodes.length} nodes`}
+              title="Knowledge"
+              subtitle="Explore map"
               icon={BookOpen}
-              gradientColors={['#FF3B30', '#E53E3E']}
-              onPress={() => handleTilePress('Knowledge Web')}
-              size="large"
+              gradientColors={['#AF52DE', '#9A4BCF']}
+              onPress={() => handleTilePress('Knowledge')}
+            />
+            <DashboardTile
+              title="Add"
+              subtitle="Knowledge"
+              icon={Plus}
+              gradientColors={['#FFD700', '#FFB300']}
+              onPress={() => handleTilePress('Add')}
             />
           </View>
 
-          {/* Productivity Insights */}
-          <Text style={styles.sectionTitle}>Today's Insights</Text>
-          <View style={styles.tilesGrid}>
-            <DashboardTile
-              title="Focus Time"
-              subtitle="4.5 hours"
-              icon={Zap}
-              gradientColors={['#5856D6', '#4B49D1']}
-              onPress={() => handleTilePress('Focus Time')}
-            />
-            <DashboardTile
-              title="Progress"
-              subtitle="+15% this week"
-              icon={TrendingUp}
-              gradientColors={['#32D74B', '#28CD41']}
-              onPress={() => handleTilePress('Progress')}
-            />
-          </View>
-
-          {/* Recent Notes */}
+          {/* Recent Activity - Notes Section */}
           {recentNotes.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Recent Notes</Text>
-              <View style={styles.recentItems}>
-                {recentNotes.map((note, index) => (
-                  <TouchableOpacity key={note.id} style={styles.recentItem}>
-                    <View style={styles.recentIcon}>
-                      <FileText size={20} color="#007AFF" strokeWidth={2} />
+              <View style={styles.activitySection}>
+                {recentNotes.map(note => (
+                  <View key={note.id} style={styles.activityCard}>
+                    <View style={styles.cardHeader}>
+                      <FileText size={16} color="#007AFF" />
+                      <Text style={styles.cardType}>Note</Text>
                     </View>
-                    <View style={styles.recentContent}>
-                      <Text style={styles.recentTitle}>{note.title}</Text>
-                      <Text style={styles.recentType}>Note</Text>
-                    </View>
-                    <View style={styles.recentTime}>
-                      <Clock size={14} color="#666666" strokeWidth={2} />
-                      <Text style={styles.recentTimeText}>
-                        {new Date(note.updatedAt).toLocaleDateString()}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+                    <Text style={styles.cardTitle}>{note.title}</Text>
+                    <Text style={styles.cardSubtitle}>{note.content.substring(0, 50)}...</Text>
+                    <Text style={styles.cardTime}>{formatDate(note.updatedAt)}</Text>
+                  </View>
                 ))}
               </View>
             </>
           )}
 
-          {/* Recent Knowledge Nodes */}
+          {/* Recent Activity - Tasks Section */}
+          {pendingTasks.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Pending Tasks</Text>
+              <View style={styles.activitySection}>
+                {pendingTasks.slice(0, 3).map(task => (
+                  <View key={task.id} style={styles.taskCard}>
+                    <View style={styles.taskHeader}>
+                      <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(task.priority) }]} />
+                      <Text style={styles.taskTitle}>{task.title}</Text>
+                      <TouchableOpacity onPress={() => handleCompleteTask(task.id)}>
+                        <Check size={20} color="#34C759" />
+                      </TouchableOpacity>
+                    </View>
+                    {task.description && (
+                      <Text style={styles.taskDescription}>{task.description}</Text>
+                    )}
+                    <Text style={styles.cardTime}>{formatDate(task.createdAt)}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Recent Activity - Knowledge Section */}
           {recentNodes.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Recent Knowledge</Text>
-              <View style={styles.recentItems}>
-                {recentNodes.map((node, index) => (
-                  <TouchableOpacity key={node.id} style={styles.recentItem}>
-                    <View style={[styles.recentIcon, { backgroundColor: node.color }]}>
-                      <BookOpen size={20} color="#FFFFFF" strokeWidth={2} />
+              <View style={styles.activitySection}>
+                {recentNodes.map(node => (
+                  <View key={node.id} style={styles.activityCard}>
+                    <View style={styles.cardHeader}>
+                      <BookOpen size={16} color="#AF52DE" />
+                      <Text style={styles.cardType}>Knowledge</Text>
                     </View>
-                    <View style={styles.recentContent}>
-                      <Text style={styles.recentTitle}>{node.title}</Text>
-                      <Text style={styles.recentType}>{node.category}</Text>
-                    </View>
-                    <View style={styles.recentTime}>
-                      <Clock size={14} color="#666666" strokeWidth={2} />
-                      <Text style={styles.recentTimeText}>
-                        {new Date(node.updatedAt).toLocaleDateString()}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+                    <Text style={styles.cardTitle}>{node.title}</Text>
+                    <Text style={styles.cardSubtitle}>{node.content.substring(0, 50)}...</Text>
+                    <Text style={styles.cardTime}>{formatDate(node.updatedAt)}</Text>
+                  </View>
                 ))}
               </View>
             </>
           )}
 
-          {/* Bottom Spacing */}
-          <View style={styles.bottomSpacing} />
+          {/* Recent Activity - Events Section */}
+          {recentEvents.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Recent Events</Text>
+              <View style={styles.activitySection}>
+                {recentEvents.map(event => (
+                  <View key={event.id} style={styles.activityCard}>
+                    <View style={styles.cardHeader}>
+                      <Calendar size={16} color="#FFD700" />
+                      <Text style={styles.cardType}>Event</Text>
+                    </View>
+                    <Text style={styles.cardTitle}>{event.title}</Text>
+                    {event.description && (
+                      <Text style={styles.cardSubtitle}>{event.description.substring(0, 50)}...</Text>
+                    )}
+                    <Text style={styles.cardTime}>{formatDate(event.date)}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
         </ScrollView>
 
-        {/* Add Menu FAB */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => setShowAddMenu(true)}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={['#007AFF', '#0056CC']}
-            style={styles.fabGradient}
-          >
-            <Plus size={24} color="#FFFFFF" strokeWidth={3} />
-          </LinearGradient>
+        {/* Floating Add Button */}
+        <TouchableOpacity style={styles.fab} onPress={() => setShowAddMenu(true)}>
+          <Plus size={32} color="#fff" />
         </TouchableOpacity>
 
         {/* Add Menu Modal */}
-        <Modal
-          visible={showAddMenu}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowAddMenu(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowAddMenu(false)}
-          >
-            <View style={styles.modalContent}>
+        <Modal visible={showAddMenu} animationType="slide" transparent onRequestClose={() => setShowAddMenu(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.addModal}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Add New</Text>
                 <TouchableOpacity onPress={() => setShowAddMenu(false)}>
-                  <X size={24} color="#FFFFFF" strokeWidth={2} />
+                  <X size={28} color="#fff" />
                 </TouchableOpacity>
               </View>
               
-              <View style={styles.menuOptions}>
-                <TouchableOpacity
-                  style={styles.menuOption}
-                  onPress={() => handleAddItem('task')}
-                >
-                  <LinearGradient
-                    colors={['#34C759', '#28A745']}
-                    style={styles.menuOptionGradient}
-                  >
-                    <CheckSquare size={24} color="#FFFFFF" strokeWidth={2} />
-                  </LinearGradient>
-                  <View style={styles.menuOptionText}>
-                    <Text style={styles.menuOptionTitle}>Task</Text>
-                    <Text style={styles.menuOptionSubtitle}>Add a new task</Text>
-                  </View>
+              <View style={styles.addOptions}>
+                <TouchableOpacity style={styles.addOption} onPress={() => handleAddItem('task')}>
+                  <Target size={32} color="#007AFF" />
+                  <Text style={styles.addOptionText}>Task</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.menuOption}
-                  onPress={() => handleAddItem('note')}
-                >
-                  <LinearGradient
-                    colors={['#007AFF', '#0056CC']}
-                    style={styles.menuOptionGradient}
-                  >
-                    <FileText size={24} color="#FFFFFF" strokeWidth={2} />
-                  </LinearGradient>
-                  <View style={styles.menuOptionText}>
-                    <Text style={styles.menuOptionTitle}>Note</Text>
-                    <Text style={styles.menuOptionSubtitle}>Write a quick note</Text>
-                  </View>
+                <TouchableOpacity style={styles.addOption} onPress={() => handleAddItem('note')}>
+                  <FileText size={32} color="#34C759" />
+                  <Text style={styles.addOptionText}>Note</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.menuOption}
-                  onPress={() => handleAddItem('event')}
-                >
-                  <LinearGradient
-                    colors={['#FF9500', '#FF8C00']}
-                    style={styles.menuOptionGradient}
-                  >
-                    <Calendar size={24} color="#FFFFFF" strokeWidth={2} />
-                  </LinearGradient>
-                  <View style={styles.menuOptionText}>
-                    <Text style={styles.menuOptionTitle}>Event</Text>
-                    <Text style={styles.menuOptionSubtitle}>Schedule an event</Text>
-                  </View>
+                <TouchableOpacity style={styles.addOption} onPress={() => handleAddItem('event')}>
+                  <Calendar size={32} color="#AF52DE" />
+                  <Text style={styles.addOptionText}>Event</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.menuOption}
-                  onPress={() => handleAddItem('knowledge')}
-                >
-                  <LinearGradient
-                    colors={['#FF3B30', '#E53E3E']}
-                    style={styles.menuOptionGradient}
-                  >
-                    <BookOpen size={24} color="#FFFFFF" strokeWidth={2} />
-                  </LinearGradient>
-                  <View style={styles.menuOptionText}>
-                    <Text style={styles.menuOptionTitle}>Knowledge Node</Text>
-                    <Text style={styles.menuOptionSubtitle}>Create knowledge</Text>
-                  </View>
+                <TouchableOpacity style={styles.addOption} onPress={() => handleAddItem('knowledge')}>
+                  <BookOpen size={32} color="#FF9500" />
+                  <Text style={styles.addOptionText}>Knowledge</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.addOption} onPress={() => handleAddItem('read')}>
+                  <FileText size={32} color="#FF3B30" />
+                  <Text style={styles.addOptionText}>Read</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
+        </Modal>
+
+        {/* Note Creation Modal */}
+        <Modal visible={showNoteModal} animationType="slide" transparent onRequestClose={() => setShowNoteModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.noteModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create Note</Text>
+                <TouchableOpacity onPress={() => setShowNoteModal(false)}>
+                  <X size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalContent}>
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder="Note title..."
+                  value={noteTitle}
+                  onChangeText={setNoteTitle}
+                  placeholderTextColor="#888"
+                />
+                <TextInput
+                  style={[styles.noteInput, styles.noteContentInput]}
+                  placeholder="Note content..."
+                  value={noteContent}
+                  onChangeText={setNoteContent}
+                  multiline
+                  placeholderTextColor="#888"
+                />
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setShowNoteModal(false)}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveNote}>
+                  <Text style={styles.saveButtonText}>Save Note</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Task Creation Modal */}
+        <Modal visible={showTaskModal} animationType="slide" transparent onRequestClose={() => setShowTaskModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.taskModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create Task</Text>
+                <TouchableOpacity onPress={() => setShowTaskModal(false)}>
+                  <X size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalContent}>
+                <TextInput
+                  style={styles.taskInput}
+                  placeholder="Task title..."
+                  value={taskTitle}
+                  onChangeText={setTaskTitle}
+                  placeholderTextColor="#888"
+                />
+                <TextInput
+                  style={[styles.taskInput, styles.taskDescriptionInput]}
+                  placeholder="Description (optional)..."
+                  value={taskDescription}
+                  onChangeText={setTaskDescription}
+                  multiline
+                  placeholderTextColor="#888"
+                />
+                <View style={styles.prioritySelector}>
+                  <Text style={styles.priorityLabel}>Priority:</Text>
+                  <View style={styles.priorityButtons}>
+                    <TouchableOpacity 
+                      style={[
+                        styles.priorityButton, 
+                        taskPriority === 'low' && styles.priorityButtonActive
+                      ]}
+                      onPress={() => setTaskPriority('low')}
+                    >
+                      <Text style={styles.priorityButtonText}>Low</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[
+                        styles.priorityButton, 
+                        taskPriority === 'medium' && styles.priorityButtonActive
+                      ]}
+                      onPress={() => setTaskPriority('medium')}
+                    >
+                      <Text style={styles.priorityButtonText}>Medium</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[
+                        styles.priorityButton, 
+                        taskPriority === 'high' && styles.priorityButtonActive
+                      ]}
+                      onPress={() => setTaskPriority('high')}
+                    >
+                      <Text style={styles.priorityButtonText}>High</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setShowTaskModal(false)}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveTask}>
+                  <Text style={styles.saveButtonText}>Create Task</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Event Creation Modal */}
+        <Modal visible={showEventModal} animationType="slide" transparent onRequestClose={() => setShowEventModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.eventModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create Event</Text>
+                <TouchableOpacity onPress={() => setShowEventModal(false)}>
+                  <X size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalContent}>
+                <TextInput
+                  style={styles.eventInput}
+                  placeholder="Event title..."
+                  value={eventTitle}
+                  onChangeText={setEventTitle}
+                  placeholderTextColor="#888"
+                />
+                <TextInput
+                  style={[styles.eventInput, styles.eventDescriptionInput]}
+                  placeholder="Description (optional)..."
+                  value={eventDescription}
+                  onChangeText={setEventDescription}
+                  multiline
+                  placeholderTextColor="#888"
+                />
+                <TextInput
+                  style={styles.eventInput}
+                  placeholder="Due Date (MM/DD/YYYY)..."
+                  value={eventDueDate}
+                  onChangeText={setEventDueDate}
+                  placeholderTextColor="#888"
+                />
+                <TextInput
+                  style={styles.eventInput}
+                  placeholder="Due Time (HH:MM AM/PM)..."
+                  value={eventDueTime}
+                  onChangeText={setEventDueTime}
+                  placeholderTextColor="#888"
+                />
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setShowEventModal(false)}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveEvent}>
+                  <Text style={styles.saveButtonText}>Create Event</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </Modal>
       </LinearGradient>
     </SafeAreaView>
@@ -430,10 +706,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   userName: {
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   levelInfo: {
     flexDirection: 'row',
@@ -443,7 +719,7 @@ const styles = StyleSheet.create({
   levelText: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
-    color: '#FFD700',
+    color: '#FFFFFF',
   },
   xpBar: {
     width: 60,
@@ -454,7 +730,7 @@ const styles = StyleSheet.create({
   },
   xpProgress: {
     height: '100%',
-    backgroundColor: '#FFD700',
+    backgroundColor: '#007AFF',
     borderRadius: 2,
   },
   xpText: {
@@ -478,28 +754,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   notificationCount: {
+    color: '#FFFFFF',
     fontSize: 12,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   sectionTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginTop: 24,
     marginBottom: 16,
+    marginTop: 24,
   },
   tilesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 12,
-    marginBottom: 8,
   },
   tile: {
     width: (width - 52) / 2,
@@ -513,144 +790,281 @@ const styles = StyleSheet.create({
   },
   tileGradient: {
     flex: 1,
-    padding: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 16,
   },
   tileTitle: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
     marginTop: 8,
     textAlign: 'center',
   },
   tileSubtitle: {
+    color: '#FFFFFF',
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#FFFFFF',
-    opacity: 0.8,
-    marginTop: 2,
+    marginTop: 4,
     textAlign: 'center',
+    opacity: 0.9,
   },
-  recentItems: {
+  activitySection: {
     gap: 12,
   },
-  recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E293B',
+  activityCard: {
+    backgroundColor: '#334155',
     borderRadius: 12,
     padding: 16,
   },
-  recentIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  recentContent: {
-    flex: 1,
-  },
-  recentTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  recentType: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: '#CCCCCC',
-  },
-  recentTime: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    marginBottom: 8,
   },
-  recentTimeText: {
+  cardType: {
+    color: '#CCCCCC',
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    marginLeft: 8,
+  },
+  cardTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    marginBottom: 8,
+  },
+  cardTime: {
+    color: '#888888',
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#666666',
   },
-  bottomSpacing: {
-    height: 100,
+  taskCard: {
+    backgroundColor: '#334155',
+    borderRadius: 12,
+    padding: 16,
+  },
+  taskHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  priorityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  taskTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    flex: 1,
+  },
+  taskDescription: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    marginBottom: 8,
   },
   fab: {
     position: 'absolute',
-    bottom: 30,
-    right: 20,
+    bottom: 32,
+    right: 24,
+    backgroundColor: '#007AFF',
+    borderRadius: 32,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  fabGradient: {
-    flex: 1,
-    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 6,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  modalContent: {
+  addModal: {
     backgroundColor: '#1E293B',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 40,
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+  },
+  notificationsModal: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+  },
+  noteModal: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '90%',
+  },
+  taskModal: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+  },
+  eventModal: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
-  menuOptions: {
+  addOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
     gap: 16,
   },
-  menuOption: {
-    flexDirection: 'row',
+  addOption: {
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#334155',
-    borderRadius: 16,
+    minWidth: 80,
   },
-  menuOptionGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  menuOptionText: {
-    flex: 1,
-  },
-  menuOptionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
+  addOptionText: {
     color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  menuOptionSubtitle: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Medium',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  modalContent: {
+    marginBottom: 16,
+  },
+  noteInput: {
+    backgroundColor: '#334155',
+    color: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  noteContentInput: {
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  taskInput: {
+    backgroundColor: '#334155',
+    color: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  taskDescriptionInput: {
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  prioritySelector: {
+    marginBottom: 12,
+  },
+  priorityLabel: {
     color: '#CCCCCC',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    marginBottom: 8,
+  },
+  priorityButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  priorityButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#334155',
+    alignItems: 'center',
+  },
+  priorityButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  priorityButtonText: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+  },
+  eventInput: {
+    backgroundColor: '#334155',
+    color: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  eventDescriptionInput: {
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  cancelButtonText: {
+    color: '#CCCCCC',
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
   },
 });
 

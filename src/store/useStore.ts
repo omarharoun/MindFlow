@@ -79,6 +79,10 @@ interface AppState {
   
   // Reset
   resetStore: () => void;
+  
+  // Add to AppState interface
+  openAIApiKey?: string;
+  setOpenAIApiKey: (key: string) => void;
 }
 
 const initialState = {
@@ -98,6 +102,7 @@ const initialState = {
   currentTab: 'home' as const,
   theme: 'dark' as const,
   notifications: true,
+  openAIApiKey: '',
 };
 
 export const useStore = create<AppState>()(
@@ -289,6 +294,9 @@ export const useStore = create<AppState>()(
       
       // Reset
       resetStore: () => set(initialState),
+      
+      // Add to AppState interface
+      setOpenAIApiKey: (key) => set({ openAIApiKey: key }),
     }),
     {
       name: 'mindflow-storage',

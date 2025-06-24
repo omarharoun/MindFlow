@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, Award, Settings, LogOut, Trophy, Target } from 'lucide-react-native';
+import { User, Award, Settings, LogOut, Trophy, Target, X } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 
 export default function ProfileScreen() {
   const { user, addExperience } = useStore();
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKey, setApiKey] = useState('');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -65,7 +67,7 @@ export default function ProfileScreen() {
               <Text style={styles.menuSubtitle}>Set and track objectives</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => setShowSettings(true)}>
               <View style={styles.menuIcon}>
                 <Settings size={20} color="#007AFF" strokeWidth={2} />
               </View>
@@ -82,6 +84,38 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+
+        {/* Settings Modal */}
+        <Modal visible={showSettings} animationType="slide" transparent onRequestClose={() => setShowSettings(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.settingsModal}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.modalTitle}>Settings</Text>
+                <TouchableOpacity onPress={() => setShowSettings(false)}>
+                  <X size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>OpenAI API Key</Text>
+                <TextInput
+                  style={styles.input}
+                  value={apiKey}
+                  onChangeText={setApiKey}
+                  placeholder="sk-..."
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </View>
+              <TouchableOpacity style={styles.saveButton} onPress={() => {
+                // Save logic here
+                setShowSettings(false);
+                Alert.alert('Saved', 'Settings saved successfully.');
+              }}>
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -186,5 +220,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: '#CCCCCC',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsModal: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 16,
+    color: '#CCCCCC',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#334155',
+    color: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
   },
 }); 

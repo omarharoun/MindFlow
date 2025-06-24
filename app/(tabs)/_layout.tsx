@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, BookOpen, Plus, Compass, User } from 'lucide-react-native';
+import { Home, BookOpen, Compass, FileText, User } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 
 export default function TabLayout() {
@@ -41,17 +41,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="create"
-        options={{
-          title: 'Create',
-          tabBarIcon: ({ color, size }) => <Plus size={size} color={color} strokeWidth={2} />,
-        }}
-      />
-      <Tabs.Screen
         name="discover"
         options={{
           title: 'Discover',
           tabBarIcon: ({ color, size }) => <Compass size={size} color={color} strokeWidth={2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="read"
+        options={{
+          title: 'Read',
+          tabBarIcon: ({ color, size }) => <FileText size={size} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
