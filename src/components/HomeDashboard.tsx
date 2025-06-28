@@ -14,6 +14,7 @@ import {
   FlatList,
   RefreshControl,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -34,9 +35,16 @@ import {
   Trash2,
   Edit3,
   Check,
+  Home,
+  Grid,
+  Bookmark,
+  User,
+  Settings,
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 import { useRouter } from 'expo-router';
+import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -47,6 +55,7 @@ interface DashboardTileProps {
   gradientColors: string[];
   onPress: () => void;
   size?: 'small' | 'large';
+  style?: any;
 }
 
 const DashboardTile: React.FC<DashboardTileProps> = ({
@@ -56,11 +65,13 @@ const DashboardTile: React.FC<DashboardTileProps> = ({
   gradientColors,
   onPress,
   size = 'small',
+  style,
 }) => (
   <TouchableOpacity
     style={[
       styles.tile,
       size === 'large' && styles.largeTile,
+      style,
     ]}
     onPress={onPress}
     activeOpacity={0.8}
@@ -502,6 +513,133 @@ const HomeDashboard: React.FC = () => {
   const recentNodes = realTimeData.knowledgeNodes.slice(0, 3);
   const recentEvents = realTimeData.events.slice(0, 3);
 
+  const { width } = useWindowDimensions();
+
+  // Responsive columns for quick actions and recent items
+  const quickActionColumns = width > 900 ? 4 : width > 600 ? 3 : 2;
+  const recentColumns = width > 900 ? 4 : width > 600 ? 3 : 2;
+  const tileMargin = 8;
+  const tileWidth = (width - (tileMargin * (quickActionColumns + 1))) / quickActionColumns;
+  const recentItemWidth = (width - (tileMargin * (recentColumns + 1))) / recentColumns;
+
+  const FloatingAddMenu = () => {
+    const [open, setOpen] = useState(false);
+    const { width } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
+
+    // Use the same size as the chatbot button, but clamp for web
+    const fabSize = Math.min(Math.round(width * 0.11), 56); // clamp to 56px max
+    const iconSize = Math.min(Math.round(width * 0.06), 28); // clamp to 28px max
+    const buttonGap = Math.round(width * 0.03);
+    const bottomOffset = insets.bottom + 80; // directly above chatbot button
+    const rightOffset = insets.right + 24;
+
+    // Action handlers for each menu item
+    const handleMenuAction = (action: string) => {
+      setOpen(false);
+      switch (action) {
+        case 'task': setShowTaskModal(true); break;
+        case 'note': setShowNoteModal(true); break;
+        case 'event': setShowEventModal(true); break;
+        case 'knowledge': router.push('/(tabs)/learn'); break;
+        case 'read': router.push('/(tabs)/notes'); break;
+        default: break;
+      }
+    };
+
+    // Menu buttons: icon, key, label, and action
+    const buttons = [
+      { icon: <Target size={iconSize} color="#222" />, key: 'task', label: 'Task' },
+      { icon: <FileText size={iconSize} color="#34C759" />, key: 'note', label: 'Note' },
+      { icon: <Calendar size={iconSize} color="#AF52DE" />, key: 'event', label: 'Event' },
+      { icon: <BookOpen size={iconSize} color="#FF9500" />, key: 'knowledge', label: 'Knowledge' },
+      { icon: <FileText size={iconSize} color="#FF3B30" />, key: 'read', label: 'Read' },
+    ];
+
+    return (
+      <>
+        <View
+          style={[
+            styles.menuContainer,
+            {
+              width: fabSize,
+              height: fabSize * (buttons.length + 1) + buttonGap * buttons.length,
+              bottom: bottomOffset,
+              right: rightOffset,
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          {/* Menu buttons, unfold upwards in a vertical list */}
+          {buttons.map((btn, i) => (
+            <TouchableOpacity
+              key={btn.key}
+              style={[
+                styles.menuButton,
+                {
+                  width: fabSize,
+                  height: fabSize,
+                  borderRadius: fabSize / 2,
+                  position: 'absolute',
+                  left: 0,
+                  bottom: open ? (fabSize + buttonGap) * (i + 1) : 0,
+                  opacity: open ? 1 : 0,
+                  backgroundColor: 'transparent',
+                  overflow: 'hidden',
+                  borderWidth: 2,
+                  borderColor: '#fff',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 3,
+                  elevation: 6,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+              ]}
+              activeOpacity={0.8}
+              onPress={() => handleMenuAction(btn.key)}
+            >
+              {btn.icon}
+            </TouchableOpacity>
+          ))}
+          {/* Add button always at bottom right, on top of chatbot button */}
+          <TouchableOpacity
+            style={[
+              styles.fab,
+              {
+                width: fabSize,
+                height: fabSize,
+                borderRadius: fabSize / 2,
+                backgroundColor: 'transparent',
+                overflow: 'hidden',
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'absolute',
+                left: 0,
+                bottom: 0,
+                zIndex: 2,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 8,
+                borderWidth: 2,
+                borderColor: '#fff',
+              },
+            ]}
+            onPress={() => setOpen(!open)}
+            activeOpacity={0.8}
+          >
+            {open ? <X size={iconSize + 4} color="#fff" /> : <Plus size={iconSize + 4} color="#fff" />}
+          </TouchableOpacity>
+        </View>
+      </>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -575,35 +713,25 @@ const HomeDashboard: React.FC = () => {
         >
           {/* Quick Actions Grid */}
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.tilesGrid}>
-            <DashboardTile
-              title="New Note"
-              subtitle="Quick capture"
-              icon={FileText}
-              gradientColors={['#007AFF', '#0056CC']}
-              onPress={() => handleTilePress('New Note')}
-            />
-            <DashboardTile
-              title="Tasks"
-              subtitle={`${pendingTasks.length} pending`}
-              icon={CheckSquare}
-              gradientColors={['#34C759', '#28A745']}
-              onPress={() => handleTilePress('Tasks')}
-            />
-            <DashboardTile
-              title="Knowledge"
-              subtitle={`${realTimeData.knowledgeNodes.length} nodes`}
-              icon={BookOpen}
-              gradientColors={['#AF52DE', '#9A4BCF']}
-              onPress={() => handleTilePress('Knowledge')}
-            />
-            <DashboardTile
-              title="Events"
-              subtitle={`${realTimeData.events.length} scheduled`}
-              icon={Calendar}
-              gradientColors={['#FFD700', '#FFB300']}
-              onPress={() => setShowEventModal(true)}
-            />
+          <View style={styles.recentRow}>
+            {[
+              { title: 'New Note', subtitle: 'Quick capture', icon: FileText, gradientColors: ['#007AFF', '#0056CC'], onPress: () => handleTilePress('New Note') },
+              { title: 'Tasks', subtitle: `${pendingTasks.length} pending`, icon: CheckSquare, gradientColors: ['#34C759', '#28A745'], onPress: () => handleTilePress('Tasks') },
+              { title: 'Knowledge', subtitle: `${realTimeData.knowledgeNodes.length} nodes`, icon: BookOpen, gradientColors: ['#AF52DE', '#9A4BCF'], onPress: () => handleTilePress('Knowledge') },
+              { title: 'Events', subtitle: `${realTimeData.events.length} scheduled`, icon: Calendar, gradientColors: ['#FFD700', '#FFB300'], onPress: () => setShowEventModal(true) },
+            ].map((tile, idx) => (
+              <View key={tile.title} style={{ flex: 1, minWidth: 140, maxWidth: 280, margin: 8 }}>
+                <DashboardTile
+                  title={tile.title}
+                  subtitle={tile.subtitle}
+                  icon={tile.icon}
+                  gradientColors={tile.gradientColors}
+                  onPress={tile.onPress}
+                  size="large"
+                  style={{ width: '100%', height: 'auto' }}
+                />
+              </View>
+            ))}
           </View>
 
           {/* Recent Activity - Notes Section */}
@@ -619,10 +747,10 @@ const HomeDashboard: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-          {recentNotes.length > 0 ? (
-            <View style={styles.activitySection}>
-              {recentNotes.map(note => (
-                <TouchableOpacity key={note.id} style={styles.activityCard} onPress={() => showNoteDetail(note)}>
+          <View style={styles.recentRow}>
+            {recentNotes.map((note, idx) => (
+              <View key={note.id} style={{ flex: 1, minWidth: 140, maxWidth: 260, margin: 8 }}>
+                <TouchableOpacity style={[styles.activityCard, { width: '100%', marginRight: 0 }]} onPress={() => showNoteDetail(note)}>
                   <View style={styles.cardHeader}>
                     <FileText size={16} color="#007AFF" />
                     <Text style={styles.cardType}>Note</Text>
@@ -631,15 +759,9 @@ const HomeDashboard: React.FC = () => {
                   <Text style={styles.cardSubtitle}>{note.content.substring(0, 50)}...</Text>
                   <Text style={styles.cardTime}>{formatDate(note.updatedAt)}</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.emptyStateCard} onPress={() => setShowNoteModal(true)}>
-              <FileText size={24} color="#007AFF" />
-              <Text style={styles.emptyStateText}>No notes yet</Text>
-              <Text style={styles.emptyStateSubtext}>Tap to create your first note</Text>
-            </TouchableOpacity>
-          )}
+              </View>
+            ))}
+          </View>
 
           {/* Recent Activity - Tasks Section */}
           <View style={styles.sectionHeader}>
@@ -692,20 +814,22 @@ const HomeDashboard: React.FC = () => {
             </TouchableOpacity>
           </View>
           {recentNodes.length > 0 ? (
-            <View style={styles.activitySection}>
-              {recentNodes.map(node => (
-                <TouchableOpacity key={node.id} style={styles.activityCard} onPress={() => {
-                  // Navigate to knowledge node detail
-                  router.push('/(tabs)/learn');
-                }}>
-                  <View style={styles.cardHeader}>
-                    <BookOpen size={16} color="#AF52DE" />
-                    <Text style={styles.cardType}>Knowledge</Text>
-                  </View>
-                  <Text style={styles.cardTitle}>{node.title}</Text>
-                  <Text style={styles.cardSubtitle}>{node.content.substring(0, 50)}...</Text>
-                  <Text style={styles.cardTime}>{formatDate(node.updatedAt)}</Text>
-                </TouchableOpacity>
+            <View style={styles.recentRow}> 
+              {recentNodes.map((node, idx) => (
+                <View key={node.id} style={{ flex: 1, minWidth: 140, maxWidth: 260, margin: 8 }}>
+                  <TouchableOpacity style={[styles.activityCard, { width: '100%', marginRight: 0 }]} onPress={() => {
+                    // Navigate to knowledge node detail
+                    router.push('/(tabs)/learn');
+                  }}>
+                    <View style={styles.cardHeader}>
+                      <BookOpen size={16} color="#AF52DE" />
+                      <Text style={styles.cardType}>Knowledge</Text>
+                    </View>
+                    <Text style={styles.cardTitle}>{node.title}</Text>
+                    <Text style={styles.cardSubtitle}>{node.content.substring(0, 50)}...</Text>
+                    <Text style={styles.cardTime}>{formatDate(node.updatedAt)}</Text>
+                  </TouchableOpacity>
+                </View>
               ))}
             </View>
           ) : (
@@ -763,9 +887,7 @@ const HomeDashboard: React.FC = () => {
         </ScrollView>
 
         {/* Floating Add Button */}
-        <TouchableOpacity style={styles.fab} onPress={() => setShowAddMenu(true)}>
-          <Plus size={32} color="#fff" />
-        </TouchableOpacity>
+        <FloatingAddMenu />
 
         {/* Add Menu Modal */}
         <Modal visible={showAddMenu} animationType="slide" transparent onRequestClose={() => setShowAddMenu(false)}>
@@ -1467,7 +1589,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
+    alignItems: 'stretch',
+    marginHorizontal: 0,
   },
   tile: {
     width: (width - 52) / 2,
@@ -1568,21 +1691,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   fab: {
-    position: 'absolute',
-    bottom: 32,
-    right: 24,
     backgroundColor: '#007AFF',
-    borderRadius: 32,
-    width: 56,
-    height: 56,
-    justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
-    zIndex: 1000,
+    justifyContent: 'center',
+    elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    position: 'absolute',
+    zIndex: 2,
   },
   modalOverlay: {
     flex: 1,
@@ -2062,6 +2180,43 @@ const styles = StyleSheet.create({
   selectedTimeOptionText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+  },
+  menuContainer: {
+    position: 'absolute',
+    bottom: 32,
+    right: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  menuButton: {
+    position: 'absolute',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    zIndex: 1,
+    opacity: 0,
+  },
+  activeButton: {
+    backgroundColor: '#17425A',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  recentRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    marginHorizontal: 0,
   },
 });
 

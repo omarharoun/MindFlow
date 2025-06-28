@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
-import { StyleSheet, SafeAreaView, TouchableOpacity, Modal, TextInput, Alert, ScrollView, View, Text } from 'react-native';
+import { StyleSheet, SafeAreaView, TouchableOpacity, Modal, TextInput, Alert, ScrollView, View, Text, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Award, X } from 'lucide-react-native';
 import KnowledgeMap from '../../src/components/KnowledgeMap';
 import { useStore } from '../../src/store/useStore';
+
+let BlurView = View;
+if (Platform.OS !== 'web') {
+  BlurView = require('expo-blur').BlurView;
+}
 
 interface Question {
   id: string;
@@ -11,6 +16,8 @@ interface Question {
   options: string[];
   correctAnswer: string;
 }
+
+const { width } = Dimensions.get('window');
 
 export default function LearnScreen() {
   const [showQuizModal, setShowQuizModal] = useState(false);
@@ -84,7 +91,9 @@ export default function LearnScreen() {
         
         {/* Floating Create Quiz Button */}
         <TouchableOpacity style={styles.fab} onPress={() => setShowQuizModal(true)}>
-          <Award size={32} color="#fff" />
+          <BlurView intensity={40} tint="light" style={styles.fabBlur}>
+            <Award size={Math.round(width * 0.09)} color="#fff" />
+          </BlurView>
         </TouchableOpacity>
 
         {/* Quiz Creation Modal */}
@@ -186,18 +195,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 32,
     right: 24,
-    backgroundColor: '#32D74B',
-    borderRadius: 32,
-    width: 56,
-    height: 56,
+    borderRadius: 1000,
+    width: Math.round(width * 0.16),
+    height: Math.round(width * 0.16),
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
     zIndex: 1000,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    borderWidth: 3,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(30, 41, 59, 0.7)',
+  },
+  fabBlur: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    borderRadius: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   modalOverlay: {
     flex: 1,

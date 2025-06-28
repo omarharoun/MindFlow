@@ -1,12 +1,26 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, StyleSheet, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TextInput, StyleSheet, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { MessageCircle, X, Send } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+let BlurView: any = View;
+if (Platform.OS !== 'web') {
+  try {
+    BlurView = require('expo-blur').BlurView;
+  } catch (e) {
+    BlurView = View;
+  }
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+const { width } = Dimensions.get('window');
+
+const smallFabSize = Math.min(Math.round(width * 0.11), 56); // clamp to 56px max
+const smallIconSize = Math.min(Math.round(width * 0.06), 28); // clamp to 28px max
 
 const Chatbot: React.FC = () => {
   const [visible, setVisible] = useState(false);
@@ -15,6 +29,7 @@ const Chatbot: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { openAIApiKey } = useStore();
   const flatListRef = useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
 
   const sendMessage = async () => {
     if (!input.trim() || !openAIApiKey) return;
@@ -54,8 +69,16 @@ const Chatbot: React.FC = () => {
 
   return (
     <>
-      <TouchableOpacity style={styles.fab} onPress={() => setVisible(true)}>
-        <MessageCircle size={32} color="#fff" />
+      <TouchableOpacity
+        style={[
+          styles.fab,
+          { width: smallFabSize, height: smallFabSize, bottom: insets.bottom + 80 }
+        ]}
+        onPress={() => setVisible(true)}
+      >
+        <BlurView intensity={40} tint="light" style={[styles.fabBlur, { borderRadius: smallFabSize / 2 }]}>
+          <MessageCircle size={smallIconSize} color="#fff" />
+        </BlurView>
       </TouchableOpacity>
       <Modal visible={visible} animationType="slide" transparent onRequestClose={() => setVisible(false)}>
         <View style={styles.modalOverlay}>
@@ -105,14 +128,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 32,
     right: 24,
-    backgroundColor: '#007AFF',
-    borderRadius: 32,
-    width: 56,
-    height: 56,
+    borderRadius: 1000,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
     zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    borderWidth: 3,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(30, 41, 59, 0.7)',
+  },
+  fabBlur: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    borderRadius: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   modalOverlay: {
     flex: 1,

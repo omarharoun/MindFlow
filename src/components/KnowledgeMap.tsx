@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -39,6 +40,11 @@ import { useStore } from '../store/useStore';
 import { KnowledgeNode } from '../types';
 
 const { width, height } = Dimensions.get('window');
+
+let BlurView = View;
+if (Platform.OS !== 'web') {
+  BlurView = require('expo-blur').BlurView;
+}
 
 interface KnowledgeMapProps {
   onNodePress?: (node: KnowledgeNode) => void;
@@ -721,8 +727,10 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
               {filteredNodes.length} nodes • {knowledgeNodes.length} total
             </Text>
           </View>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddNode}>
-            <Plus size={24} color="#FFFFFF" />
+          <TouchableOpacity style={styles.fab} onPress={handleAddNode}>
+            <BlurView intensity={40} tint="light" style={styles.fabBlur}>
+              <Plus size={Math.round(width * 0.09)} color="#fff" />
+            </BlurView>
           </TouchableOpacity>
         </View>
 
@@ -932,18 +940,32 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#64748B',
   },
-  addButton: {
-    backgroundColor: '#3B82F6',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  fab: {
+    position: 'absolute',
+    bottom: 32,
+    right: 24,
+    borderRadius: 1000,
+    width: Math.round(width * 0.16),
+    height: Math.round(width * 0.16),
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    borderWidth: 3,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(30, 41, 59, 0.7)',
+  },
+  fabBlur: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    borderRadius: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   searchContainer: {
     flexDirection: 'row',
