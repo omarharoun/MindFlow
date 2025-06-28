@@ -58,19 +58,6 @@ export default function DiscoverScreen() {
       isLiked: true,
       isBookmarked: false,
     },
-    {
-      id: '3',
-      title: 'Dance challenge 💃',
-      description: 'Trying out the latest dance trend. How did I do?',
-      author: '@dance_queen',
-      likes: 2156,
-      comments: 234,
-      shares: 123,
-      bookmarks: 78,
-      music: 'Trending Beat - Dance Music',
-      isLiked: false,
-      isBookmarked: true,
-    },
   ]);
 
   const handleSaveVideo = () => {

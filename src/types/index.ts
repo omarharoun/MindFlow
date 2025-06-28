@@ -169,6 +169,20 @@ export interface Note {
   isPinned: boolean;
 }
 
+export interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  date: Date;
+  category: string;
+  tags?: string[];
+  location?: string;
+  isAllDay?: boolean;
+  reminder?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface FocusSession {
   id: string;
   userId: string;

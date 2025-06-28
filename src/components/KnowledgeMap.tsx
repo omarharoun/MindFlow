@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -63,11 +63,14 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
     content: '',
     tags: [] as string[],
   });
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'map' | 'grid' | 'list'>('map');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [draggedNode, setDraggedNode] = useState<KnowledgeNode | null>(null);
+  const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [isLayoutCalculating, setIsLayoutCalculating] = useState(false);
+  const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
 
   const categories = [
     { id: 'all', name: 'All', color: '#6B7280' },
@@ -88,13 +91,147 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
     '#F97316', '#06B6D4', '#84CC16', '#6366F1', '#EC4899',
   ];
 
-  const filteredNodes = knowledgeNodes.filter(node => {
-    const matchesSearch = node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         node.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         node.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = selectedCategory === 'all' || node.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredNodes = useMemo(() => {
+    return knowledgeNodes.filter(node => {
+      const matchesSearch = node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           node.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           node.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesCategory = selectedCategory === 'all' || node.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [knowledgeNodes, searchQuery, selectedCategory]);
+
+  // Force-directed layout algorithm
+  const calculateOptimalLayout = useCallback(() => {
+    if (filteredNodes.length === 0 || mapDimensions.width === 0) return;
+
+    setIsLayoutCalculating(true);
+    
+    const nodeRadius = 120; // Minimum distance between node centers
+    const repulsionForce = 200; // Force pushing nodes apart
+    const attractionForce = 50; // Force pulling connected nodes together
+    const damping = 0.8; // Reduces velocity over time
+    const maxIterations = 100;
+    
+    // Initialize positions if not set
+    const positions: Record<string, { x: number; y: number; vx: number; vy: number }> = {};
+    filteredNodes.forEach((node, index) => {
+      const currentPos = nodePositions[node.id];
+      if (!currentPos) {
+        // Distribute nodes in a circle initially
+        const angle = (index / filteredNodes.length) * 2 * Math.PI;
+        const radius = Math.min(mapDimensions.width, mapDimensions.height) * 0.3;
+        positions[node.id] = {
+          x: mapDimensions.width / 2 + Math.cos(angle) * radius,
+          y: mapDimensions.height / 2 + Math.sin(angle) * radius,
+          vx: 0,
+          vy: 0
+        };
+      } else {
+        positions[node.id] = {
+          ...currentPos,
+          vx: 0,
+          vy: 0
+        };
+      }
+    });
+
+    // Force simulation
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      // Apply repulsion forces between all nodes
+      for (let i = 0; i < filteredNodes.length; i++) {
+        for (let j = i + 1; j < filteredNodes.length; j++) {
+          const nodeA = filteredNodes[i];
+          const nodeB = filteredNodes[j];
+          const posA = positions[nodeA.id];
+          const posB = positions[nodeB.id];
+          
+          const dx = posB.x - posA.x;
+          const dy = posB.y - posA.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance > 0 && distance < repulsionForce) {
+            const force = (repulsionForce - distance) / distance;
+            const fx = (dx / distance) * force;
+            const fy = (dy / distance) * force;
+            
+            posA.vx -= fx;
+            posA.vy -= fy;
+            posB.vx += fx;
+            posB.vy += fy;
+          }
+        }
+      }
+
+      // Apply attraction forces for connected nodes
+      filteredNodes.forEach(node => {
+        node.connections?.forEach(connectionId => {
+          const connectedNode = filteredNodes.find(n => n.id === connectionId);
+          if (connectedNode) {
+            const posA = positions[node.id];
+            const posB = positions[connectedNode.id];
+            
+            const dx = posB.x - posA.x;
+            const dy = posB.y - posA.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+              const force = (distance - nodeRadius) * attractionForce / distance;
+              const fx = (dx / distance) * force;
+              const fy = (dy / distance) * force;
+              
+              posA.vx += fx;
+              posA.vy += fy;
+              posB.vx -= fx;
+              posB.vy -= fy;
+            }
+          }
+        });
+      });
+
+      // Update positions and apply damping
+      Object.values(positions).forEach(pos => {
+        pos.x += pos.vx;
+        pos.y += pos.vy;
+        pos.vx *= damping;
+        pos.vy *= damping;
+        
+        // Keep nodes within bounds
+        pos.x = Math.max(nodeRadius, Math.min(mapDimensions.width - nodeRadius, pos.x));
+        pos.y = Math.max(nodeRadius, Math.min(mapDimensions.height - nodeRadius, pos.y));
+      });
+    }
+
+    // Extract final positions
+    const finalPositions: Record<string, { x: number; y: number }> = {};
+    Object.keys(positions).forEach(nodeId => {
+      finalPositions[nodeId] = {
+        x: positions[nodeId].x,
+        y: positions[nodeId].y
+      };
+    });
+
+    setNodePositions(finalPositions);
+    setIsLayoutCalculating(false);
+  }, [filteredNodes.length, mapDimensions.width, mapDimensions.height]);
+
+  // Calculate layout when nodes or map dimensions change
+  useEffect(() => {
+    if (viewMode === 'map' && filteredNodes.length > 0 && mapDimensions.width > 0) {
+      // Use setTimeout to avoid immediate re-render
+      const timer = setTimeout(() => {
+        calculateOptimalLayout();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode, filteredNodes.length, mapDimensions.width, mapDimensions.height, calculateOptimalLayout]);
+
+  // Handle map container layout
+  const handleMapLayout = (event: any) => {
+    const { width, height } = event.nativeEvent.layout;
+    setMapDimensions({ width, height });
+  };
 
   const handleAddNode = () => {
     setEditingNode(null);
@@ -153,6 +290,17 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
         likes: 0,
       };
       addKnowledgeNode(newNode);
+      
+      // Initialize position for the new node
+      const newPosition = {
+        x: Math.random() * (mapDimensions.width - 200) + 100,
+        y: Math.random() * (mapDimensions.height - 200) + 100,
+      };
+      setNodePositions(prev => ({
+        ...prev,
+        [newNode.id]: newPosition
+      }));
+      
       addExperience(20);
       Alert.alert('Node Created', 'New knowledge node has been added!');
     } else {
@@ -181,65 +329,185 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
     }
   };
 
-  const renderNode = (node: KnowledgeNode) => (
-    <TouchableOpacity
-      key={node.id}
-      style={[
-        styles.node,
-        {
-          backgroundColor: node.color,
-          left: node.position.x,
-          top: node.position.y,
-        },
-      ]}
-      onPress={() => handleNodePress(node)}
-      onLongPress={() => {
-        Alert.alert(
-          'Node Options',
-          node.title,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Edit', onPress: () => handleEditNode(node) },
-            { text: 'Delete', style: 'destructive', onPress: () => handleDeleteNode(node) },
-          ]
-        );
-      }}
-    >
-      <View style={styles.nodeHeader}>
-        <Text style={styles.nodeTitle} numberOfLines={2}>
-          {node.title}
-        </Text>
-        <View style={styles.nodeStats}>
-          <Eye size={12} color="#FFFFFF" />
-          <Text style={styles.nodeStatText}>{node.views}</Text>
-          <Heart size={12} color="#FFFFFF" />
-          <Text style={styles.nodeStatText}>{node.likes}</Text>
-        </View>
-      </View>
+  const renderNode = (node: KnowledgeNode, index?: number) => {
+    if (viewMode === 'map') {
+      const position = nodePositions[node.id] || { x: 0, y: 0 };
       
-      <Text style={styles.nodeContent} numberOfLines={3}>
-        {node.content}
-      </Text>
-      
-      <View style={styles.nodeFooter}>
-        <View style={styles.nodeCategory}>
-          <Text style={styles.nodeCategoryText}>
-            {categories.find(cat => cat.id === node.category)?.name || 'Personal'}
-          </Text>
-        </View>
-        
-        {node.tags.length > 0 && (
-          <View style={styles.nodeTags}>
-            <Tag size={10} color="#FFFFFF" />
-            <Text style={styles.nodeTagsText} numberOfLines={1}>
-              {node.tags.slice(0, 2).join(', ')}
-              {node.tags.length > 2 && '...'}
+      return (
+        <TouchableOpacity
+          key={node.id}
+          style={[
+            styles.mapNode,
+            {
+              backgroundColor: node.color,
+              left: position.x - 100, // Center the node on its position
+              top: position.y - 60,
+              opacity: isLayoutCalculating ? 0.7 : 1,
+            },
+          ]}
+          onPress={() => handleNodePress(node)}
+          onLongPress={() => {
+            Alert.alert(
+              'Node Options',
+              node.title,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Edit', onPress: () => handleEditNode(node) },
+                { text: 'Delete', style: 'destructive', onPress: () => handleDeleteNode(node) },
+                { text: 'Auto Layout', onPress: () => calculateOptimalLayout() },
+              ]
+            );
+          }}
+        >
+          <View style={styles.nodeHeader}>
+            <Text style={styles.nodeTitle} numberOfLines={2}>
+              {node.title}
             </Text>
+            <View style={styles.nodeStats}>
+              <Eye size={12} color="#FFFFFF" />
+              <Text style={styles.nodeStatText}>{node.views}</Text>
+              <Heart size={12} color="#FFFFFF" />
+              <Text style={styles.nodeStatText}>{node.likes}</Text>
+            </View>
           </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+          
+          <Text style={styles.nodeContent} numberOfLines={3}>
+            {node.content}
+          </Text>
+          
+          <View style={styles.nodeFooter}>
+            <View style={styles.nodeCategory}>
+              <Text style={styles.nodeCategoryText}>
+                {categories.find(cat => cat.id === node.category)?.name || 'Personal'}
+              </Text>
+            </View>
+            
+            {node.tags.length > 0 && (
+              <View style={styles.nodeTags}>
+                <Tag size={10} color="#FFFFFF" />
+                <Text style={styles.nodeTagsText} numberOfLines={1}>
+                  {node.tags.slice(0, 2).join(', ')}
+                  {node.tags.length > 2 && '...'}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      );
+    } else if (viewMode === 'list') {
+      return (
+        <TouchableOpacity
+          key={node.id}
+          style={styles.listNode}
+          onPress={() => handleNodePress(node)}
+          onLongPress={() => {
+            Alert.alert(
+              'Node Options',
+              node.title,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Edit', onPress: () => handleEditNode(node) },
+                { text: 'Delete', style: 'destructive', onPress: () => handleDeleteNode(node) },
+              ]
+            );
+          }}
+        >
+          <View style={[styles.listNodeColor, { backgroundColor: node.color }]} />
+          <View style={styles.listNodeContent}>
+            <View style={styles.listNodeHeader}>
+              <Text style={styles.listNodeTitle} numberOfLines={1}>
+                {node.title}
+              </Text>
+              <View style={styles.listNodeStats}>
+                <Eye size={14} color="#64748B" />
+                <Text style={styles.listNodeStatText}>{node.views}</Text>
+                <Heart size={14} color="#64748B" />
+                <Text style={styles.listNodeStatText}>{node.likes}</Text>
+              </View>
+            </View>
+            
+            <Text style={styles.listNodeDescription} numberOfLines={2}>
+              {node.content}
+            </Text>
+            
+            <View style={styles.listNodeFooter}>
+              <View style={styles.listNodeCategory}>
+                <Text style={styles.listNodeCategoryText}>
+                  {categories.find(cat => cat.id === node.category)?.name || 'Personal'}
+                </Text>
+              </View>
+              
+              {node.tags.length > 0 && (
+                <View style={styles.listNodeTags}>
+                  <Tag size={12} color="#64748B" />
+                  <Text style={styles.listNodeTagsText} numberOfLines={1}>
+                    {node.tags.slice(0, 3).join(', ')}
+                    {node.tags.length > 3 && '...'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    } else {
+      // Grid view
+      return (
+        <TouchableOpacity
+          key={node.id}
+          style={styles.gridNode}
+          onPress={() => handleNodePress(node)}
+          onLongPress={() => {
+            Alert.alert(
+              'Node Options',
+              node.title,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Edit', onPress: () => handleEditNode(node) },
+                { text: 'Delete', style: 'destructive', onPress: () => handleDeleteNode(node) },
+              ]
+            );
+          }}
+        >
+          <View style={[styles.gridNodeHeader, { backgroundColor: node.color }]}>
+            <Text style={styles.gridNodeTitle} numberOfLines={2}>
+              {node.title}
+            </Text>
+            <View style={styles.gridNodeStats}>
+              <Eye size={12} color="#FFFFFF" />
+              <Text style={styles.gridNodeStatText}>{node.views}</Text>
+              <Heart size={12} color="#FFFFFF" />
+              <Text style={styles.gridNodeStatText}>{node.likes}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.gridNodeBody}>
+            <Text style={styles.gridNodeContent} numberOfLines={3}>
+              {node.content}
+            </Text>
+            
+            <View style={styles.gridNodeFooter}>
+              <View style={styles.gridNodeCategory}>
+                <Text style={styles.gridNodeCategoryText}>
+                  {categories.find(cat => cat.id === node.category)?.name || 'Personal'}
+                </Text>
+              </View>
+              
+              {node.tags.length > 0 && (
+                <View style={styles.gridNodeTags}>
+                  <Tag size={10} color="#64748B" />
+                  <Text style={styles.gridNodeTagsText} numberOfLines={1}>
+                    {node.tags.slice(0, 2).join(', ')}
+                    {node.tags.length > 2 && '...'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+  };
 
   const renderAddModal = () => (
     <Modal
@@ -500,6 +768,12 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
         {/* View Mode Toggle */}
         <View style={styles.viewModeContainer}>
           <TouchableOpacity
+            style={[styles.viewModeButton, viewMode === 'map' && styles.activeViewModeButton]}
+            onPress={() => setViewMode('map')}
+          >
+            <RotateCcw size={16} color={viewMode === 'map' ? '#FFFFFF' : '#64748B'} />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.viewModeButton, viewMode === 'grid' && styles.activeViewModeButton]}
             onPress={() => setViewMode('grid')}
           >
@@ -512,6 +786,20 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
             <List size={16} color={viewMode === 'list' ? '#FFFFFF' : '#64748B'} />
           </TouchableOpacity>
         </View>
+        
+        {/* Auto Layout Button for Map View */}
+        {viewMode === 'map' && (
+          <TouchableOpacity
+            style={styles.autoLayoutButton}
+            onPress={calculateOptimalLayout}
+            disabled={isLayoutCalculating}
+          >
+            <RotateCcw size={16} color="#FFFFFF" />
+            <Text style={styles.autoLayoutButtonText}>
+              {isLayoutCalculating ? 'Calculating...' : 'Auto Layout'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Knowledge Map */}
@@ -533,13 +821,77 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
               </TouchableOpacity>
             )}
           </View>
-        ) : (
+        ) : viewMode === 'map' ? (
+          // Map view - free-form positioning with force-directed layout
+          <View 
+            style={styles.mapViewContainer}
+            onLayout={handleMapLayout}
+          >
+            {/* Connection lines between connected nodes */}
+            {filteredNodes.map(node => 
+              node.connections?.map(connectionId => {
+                const connectedNode = filteredNodes.find(n => n.id === connectionId);
+                if (!connectedNode) return null;
+                
+                const pos1 = nodePositions[node.id];
+                const pos2 = nodePositions[connectedNode.id];
+                
+                if (!pos1 || !pos2) return null;
+                
+                return (
+                  <View
+                    key={`${node.id}-${connectionId}`}
+                    style={[
+                      styles.connectionLine,
+                      {
+                        left: pos1.x,
+                        top: pos1.y,
+                        width: Math.sqrt(Math.pow(pos2.x - pos1.x, 2) + Math.pow(pos2.y - pos1.y, 2)),
+                        transform: [
+                          {
+                            rotate: `${Math.atan2(pos2.y - pos1.y, pos2.x - pos1.x)}rad`
+                          }
+                        ]
+                      }
+                    ]}
+                  />
+                );
+              })
+            )}
+            
+            {/* Nodes */}
+            {filteredNodes.map(renderNode)}
+            
+            {/* Layout indicator */}
+            {isLayoutCalculating && (
+              <View style={styles.layoutIndicator}>
+                <Text style={styles.layoutIndicatorText}>Calculating optimal layout...</Text>
+              </View>
+            )}
+          </View>
+        ) : viewMode === 'list' ? (
+          // List view - vertical list
           <ScrollView 
-            style={styles.nodesContainer}
-            contentContainerStyle={styles.nodesContent}
+            style={styles.listContainer}
+            contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
           >
-            {filteredNodes.map(renderNode)}
+            {filteredNodes.map((node, index) => renderNode(node, index))}
+          </ScrollView>
+        ) : (
+          // Grid view - organized grid layout
+          <ScrollView 
+            style={styles.gridContainer}
+            contentContainerStyle={styles.gridContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.gridLayout}>
+              {filteredNodes.map((node, index) => (
+                <View key={node.id} style={styles.gridItem}>
+                  {renderNode(node, index)}
+                </View>
+              ))}
+            </View>
           </ScrollView>
         )}
       </View>
@@ -692,14 +1044,33 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#FFFFFF',
   },
-  nodesContainer: {
+  mapViewContainer: {
     flex: 1,
   },
-  nodesContent: {
+  listContainer: {
+    flex: 1,
+  },
+  listContent: {
     padding: 20,
     minHeight: height - 200,
   },
-  node: {
+  gridContainer: {
+    flex: 1,
+  },
+  gridContent: {
+    padding: 20,
+    minHeight: height - 200,
+  },
+  gridLayout: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 20,
+  },
+  gridItem: {
+    flex: 1,
+    maxWidth: width / 2 - 20,
+  },
+  mapNode: {
     position: 'absolute',
     width: 200,
     minHeight: 120,
@@ -929,6 +1300,203 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#FFFFFF',
+  },
+  gridNode: {
+    backgroundColor: 'rgba(51, 65, 85, 0.3)',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    minHeight: 200,
+  },
+  gridNodeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 12,
+  },
+  gridNodeTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    lineHeight: 20,
+  },
+  gridNodeStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  gridNodeStatText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#FFFFFF',
+    marginRight: 8,
+  },
+  gridNodeBody: {
+    flex: 1,
+  },
+  gridNodeContent: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#FFFFFF',
+    lineHeight: 18,
+    marginBottom: 12,
+    opacity: 0.9,
+  },
+  gridNodeFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  gridNodeCategory: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  gridNodeCategoryText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Medium',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
+  gridNodeTags: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+    marginLeft: 8,
+  },
+  gridNodeTagsText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Regular',
+    color: '#FFFFFF',
+    opacity: 0.8,
+  },
+  listNode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'rgba(51, 65, 85, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  listNodeColor: {
+    width: 4,
+    height: '100%',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    marginRight: 16,
+  },
+  listNodeContent: {
+    flex: 1,
+  },
+  listNodeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  listNodeTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    lineHeight: 20,
+  },
+  listNodeStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  listNodeStatText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#64748B',
+    marginRight: 8,
+  },
+  listNodeDescription: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#E2E8F0',
+    lineHeight: 18,
+    marginBottom: 12,
+    opacity: 0.9,
+  },
+  listNodeFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  listNodeCategory: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  listNodeCategoryText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Medium',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
+  listNodeTags: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+    marginLeft: 8,
+  },
+  listNodeTagsText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Regular',
+    color: '#64748B',
+    opacity: 0.8,
+  },
+  connectionLine: {
+    position: 'absolute',
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 1,
+    transformOrigin: 'left center',
+  },
+  layoutIndicator: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -100 }, { translateY: -20 }],
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  layoutIndicatorText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#FFFFFF',
+  },
+  autoLayoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+    marginLeft: 12,
+  },
+  autoLayoutButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#3B82F6',
   },
 });
 

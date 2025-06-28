@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, KnowledgeNode, Content, Task, Note, Quiz } from '../types';
+import { User, KnowledgeNode, Content, Task, Note, Quiz, Event } from '../types';
 
 interface AppState {
   // User state
@@ -20,6 +20,7 @@ interface AppState {
   // Productivity state
   tasks: Task[];
   notes: Note[];
+  events: Event[];
   focusSessions: any[];
   
   // Quiz state
@@ -63,6 +64,10 @@ interface AppState {
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   
+  addEvent: (event: Event) => void;
+  updateEvent: (id: string, updates: Partial<Event>) => void;
+  deleteEvent: (id: string) => void;
+  
   // Quiz actions
   addQuiz: (quiz: Quiz) => void;
   setCurrentQuiz: (quiz: Quiz | null) => void;
@@ -95,6 +100,7 @@ const initialState = {
   savedContent: [],
   tasks: [],
   notes: [],
+  events: [],
   focusSessions: [],
   quizzes: [],
   currentQuiz: null,
@@ -237,6 +243,23 @@ export const useStore = create<AppState>()(
       deleteNote: (id) =>
         set((state) => ({
           notes: state.notes.filter(note => note.id !== id),
+        })),
+      
+      addEvent: (event) =>
+        set((state) => ({
+          events: [...state.events, event],
+        })),
+      
+      updateEvent: (id, updates) =>
+        set((state) => ({
+          events: state.events.map(event =>
+            event.id === id ? { ...event, ...updates } : event
+          ),
+        })),
+      
+      deleteEvent: (id) =>
+        set((state) => ({
+          events: state.events.filter(event => event.id !== id),
         })),
       
       // Quiz actions
