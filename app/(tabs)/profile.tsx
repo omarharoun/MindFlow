@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, Award, Settings, LogOut, Trophy, Target, X } from 'lucide-react-native';
+import { User, Award, Settings, LogOut, Trophy, Target, X, Moon, Sun, Bell } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 
 export default function ProfileScreen() {
-  const { user, addExperience } = useStore();
+  const { user, addExperience, theme, toggleTheme } = useStore();
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: () => {
+          // Sign out logic here
+          Alert.alert('Signed Out', 'You have been signed out successfully.');
+        }},
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -75,7 +90,7 @@ export default function ProfileScreen() {
               <Text style={styles.menuSubtitle}>App preferences</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
               <View style={styles.menuIcon}>
                 <LogOut size={20} color="#FF3B30" strokeWidth={2} />
               </View>
@@ -89,29 +104,73 @@ export default function ProfileScreen() {
         <Modal visible={showSettings} animationType="slide" transparent onRequestClose={() => setShowSettings(false)}>
           <View style={styles.modalOverlay}>
             <View style={styles.settingsModal}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Settings</Text>
                 <TouchableOpacity onPress={() => setShowSettings(false)}>
                   <X size={28} color="#fff" />
                 </TouchableOpacity>
               </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>OpenAI API Key</Text>
-                <TextInput
-                  style={styles.input}
-                  value={apiKey}
-                  onChangeText={setApiKey}
-                  placeholder="sk-..."
-                  secureTextEntry
-                  autoCapitalize="none"
-                />
-              </View>
+              
+              <ScrollView style={styles.modalContent}>
+                {/* Theme Toggle */}
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <View style={styles.settingIcon}>
+                      {theme === 'dark' ? <Moon size={20} color="#8B5CF6" strokeWidth={2} /> : <Sun size={20} color="#F59E0B" strokeWidth={2} />}
+                    </View>
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingTitle}>Dark Mode</Text>
+                      <Text style={styles.settingSubtitle}>Toggle dark/light theme</Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={theme === 'dark'}
+                    onValueChange={toggleTheme}
+                    trackColor={{ false: '#767577', true: '#8B5CF6' }}
+                    thumbColor={theme === 'dark' ? '#FFFFFF' : '#F4F3F4'}
+                  />
+                </View>
+
+                {/* Notifications Toggle */}
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <View style={styles.settingIcon}>
+                      <Bell size={20} color="#34C759" strokeWidth={2} />
+                    </View>
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingTitle}>Notifications</Text>
+                      <Text style={styles.settingSubtitle}>Enable push notifications</Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={notificationsEnabled}
+                    onValueChange={setNotificationsEnabled}
+                    trackColor={{ false: '#767577', true: '#34C759' }}
+                    thumbColor={notificationsEnabled ? '#FFFFFF' : '#F4F3F4'}
+                  />
+                </View>
+
+                {/* API Key Input */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>OpenAI API Key</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={apiKey}
+                    onChangeText={setApiKey}
+                    placeholder="sk-..."
+                    placeholderTextColor="#666"
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                </View>
+              </ScrollView>
+
               <TouchableOpacity style={styles.saveButton} onPress={() => {
                 // Save logic here
                 setShowSettings(false);
                 Alert.alert('Saved', 'Settings saved successfully.');
               }}>
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.saveButtonText}>Save Settings</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -234,11 +293,54 @@ const styles = StyleSheet.create({
     width: '90%',
     maxWidth: 400,
   },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   modalTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginBottom: 16,
+  },
+  modalContent: {
+    marginBottom: 24,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  settingInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  settingText: {
+    flex: 1,
+  },
+  settingTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  settingSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#CCCCCC',
   },
   inputGroup: {
     marginBottom: 24,

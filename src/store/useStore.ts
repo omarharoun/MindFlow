@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, KnowledgeNode, Content, Task, Note, Quiz, Event } from '../types';
 
 interface AppState {
@@ -76,6 +74,7 @@ interface AppState {
   // UI actions
   setCurrentTab: (tab: 'home' | 'learn' | 'create' | 'discover' | 'profile') => void;
   setTheme: (theme: 'dark' | 'light' | 'auto') => void;
+  toggleTheme: () => void;
   setNotifications: (enabled: boolean) => void;
   
   // Experience and leveling
@@ -112,8 +111,7 @@ const initialState = {
 };
 
 export const useStore = create<AppState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       ...initialState,
       
       // User actions
@@ -278,6 +276,9 @@ export const useStore = create<AppState>()(
       // UI actions
       setCurrentTab: (tab) => set({ currentTab: tab }),
       setTheme: (theme) => set({ theme }),
+      toggleTheme: () => set((state) => ({ 
+        theme: state.theme === 'dark' ? 'light' : 'dark' 
+      })),
       setNotifications: (notifications) => set({ notifications }),
       
       // Experience and leveling
@@ -320,21 +321,6 @@ export const useStore = create<AppState>()(
       
       // Add to AppState interface
       setOpenAIApiKey: (key) => set({ openAIApiKey: key }),
-    }),
-    {
-      name: 'mindflow-storage',
-      storage: {
-        getItem: async (name) => {
-          const value = await AsyncStorage.getItem(name);
-          return value ? JSON.parse(value) : null;
-        },
-        setItem: async (name, value) => {
-          await AsyncStorage.setItem(name, JSON.stringify(value));
-        },
-        removeItem: async (name) => {
-          await AsyncStorage.removeItem(name);
-        },
-      },
-    }
+    })
   )
-); 
+;

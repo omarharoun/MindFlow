@@ -1,293 +1,170 @@
-# MindFlow - Unified Learning & Productivity Platform
+# 🧠 MindFlow
 
-> **Where Knowledge Flows** - A React Native app that combines productivity management, knowledge organization, and social learning into one seamless experience.
+**Your Personal Learning & Knowledge Management Platform**
 
-## 🎯 Vision
+MindFlow is a modern, cross-platform application built with React Native and Expo that helps you organize your learning journey, manage knowledge, and track your progress in an intuitive and beautiful interface.
 
-MindFlow transforms how people learn, create, and share knowledge in a social, gamified environment. It combines the best aspects of:
+![MindFlow App](https://img.shields.io/badge/Platform-Web%20%7C%20iOS%20%7C%20Android-blue)
+![React Native](https://img.shields.io/badge/React%20Native-0.72+-green)
+![Expo](https://img.shields.io/badge/Expo-49+-orange)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)
 
-- **IHSAN-Dashboard**: Productivity and task management
-- **MindWeb**: Knowledge organization and AI-powered learning
-- **TikTik**: Social content creation and discovery
+## ✨ Features
 
-## 🚀 Key Features
+### 🏠 **Smart Dashboard**
+- **Quick Actions Bar** - Instant access to common tasks
+- **Progress Tracking** - Visual progress indicators and statistics
+- **Real-time Updates** - Live data synchronization
+- **Weather & Time Widget** - Current time and weather information
 
-### 📊 Productivity Hub
-- **Quick Actions Dashboard**: Notes, tasks, calendar, document scanning
-- **Learning Progress Tracking**: Course progress, focus time, productivity insights
-- **Smart Notifications**: Contextual reminders and progress updates
-- **Recent Items**: Quick access to recently created content
+### 📚 **Learning Management**
+- **Knowledge Mapping** - Visual knowledge graph with interconnected nodes
+- **Interactive Learning** - Create and take quizzes
+- **Progress Analytics** - Track learning milestones and achievements
+- **Content Organization** - Categorize and tag learning materials
 
-### 🧠 Knowledge Web
-- **Interactive Knowledge Nodes**: Create and organize knowledge with rich content
-- **Visual Knowledge Maps**: See relationships between concepts
-- **AI-Powered Content**: Generate and enhance content using AI
-- **Quiz & Testing System**: Create and take quizzes based on knowledge
-- **Gamification**: XP, levels, achievements, and progress tracking
+### 📝 **Note Taking**
+- **Rich Text Notes** - Create detailed notes with formatting
+- **Document Upload** - Support for PDFs and other documents
+- **Smart Search** - Find notes quickly with advanced filtering
+- **Tags & Categories** - Organize notes with custom tags
 
-### 📱 Social Learning Feed
-- **Vertical Video Feed**: Educational content, tutorials, knowledge sharing
-- **Social Interactions**: Like, comment, share, and follow creators
-- **Content Creation**: Record educational videos, tutorials, explanations
-- **Discover Page**: Find new topics, creators, and learning paths
-- **Collaborative Learning**: Study groups, shared knowledge spaces
+### 🔍 **Discovery & Exploration**
+- **Fact of the Day** - Daily interesting facts and trivia
+- **Historical Events** - Learn about events that happened today
+- **AI Fact Generator** - Generate custom facts and knowledge
+- **Fact vs Fiction Game** - Test your knowledge with interactive games
 
-## 🏗️ Architecture
+### 👤 **Personal Profile**
+- **Achievement System** - Unlock badges and track accomplishments
+- **Learning Goals** - Set and monitor personal objectives
+- **Theme Customization** - Dark/Light mode toggle
+- **Settings Management** - Customize your learning experience
 
-### Tech Stack
-- **Frontend**: React Native with Expo
-- **State Management**: Zustand with persistence
-- **Navigation**: React Navigation
-- **Styling**: NativeWind (Tailwind CSS for React Native)
-- **Icons**: Lucide React Native
-- **Backend**: PocketBase + Supabase
-- **AI**: OpenAI API integration
-
-### Project Structure
-```
-MindFlow/
-├── src/
-│   ├── components/          # Reusable UI components
-│   ├── screens/            # Main app screens
-│   ├── store/              # Zustand state management
-│   ├── types/              # TypeScript type definitions
-│   ├── services/           # API and external services
-│   ├── hooks/              # Custom React hooks
-│   └── utils/              # Utility functions
-├── assets/                 # Images, fonts, etc.
-├── app.json               # Expo configuration
-└── package.json           # Dependencies
-```
-
-## 🎨 Design System
-
-### Color Palette
-- **Primary**: Deep blue (#1E3A8A) - Knowledge and trust
-- **Secondary**: Emerald green (#059669) - Growth and learning
-- **Accent**: Purple (#7C3AED) - Creativity and innovation
-- **Background**: Dark theme (#0F172A) - Focus and readability
-- **Surface**: Slate gray (#334155) - Content areas
-
-### Typography
-- **Headings**: Inter Bold
-- **Body**: Inter Regular
-- **Code**: JetBrains Mono
-
-## 📱 App Navigation
-
-### Main Tabs
-1. **Home** - Personalized dashboard with quick actions
-2. **Learn** - Knowledge web and learning content
-3. **Create** - Content creation tools
-4. **Discover** - Social feed and content exploration
-5. **Profile** - User profile, achievements, and settings
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- Expo CLI
-- iOS Simulator or Android Emulator (optional)
+- Yarn package manager
+- Expo CLI (optional, for development)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd MindFlow
+   git clone https://github.com/yourusername/mindflow.git
+   cd mindflow
    ```
 
 2. **Install dependencies**
    ```bash
-   npm install
+   yarn install
    ```
 
 3. **Start the development server**
    ```bash
-   npm start
+   yarn web        # For web development
+   yarn ios        # For iOS development
+   yarn android    # For Android development
    ```
 
-4. **Run on device/simulator**
-   ```bash
-   # iOS
-   npm run ios
-   
-   # Android
-   npm run android
-   
-   # Web
-   npm run web
-   ```
+4. **Open in your browser**
+   Navigate to `http://localhost:8081` to view the application.
 
-### Environment Setup
+## 🛠️ Development
 
-1. **Create environment file**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Configure API keys**
-   ```env
-   OPENAI_API_KEY=your_openai_api_key
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-## 🎯 Core Components
-
-### HomeDashboard
-The main dashboard that combines productivity features with learning insights:
-- Quick action tiles for common tasks
-- Learning progress overview
-- Recent knowledge nodes and content
-- Productivity insights and focus time tracking
-
-### SocialFeed
-TikTok-style vertical feed for educational content:
-- Swipeable video/content feed
-- Social interactions (like, comment, share)
-- Content type badges (video, quiz, note)
-- Creator profiles and following system
-
-### KnowledgeWeb
-Interactive knowledge management system:
-- 3D knowledge node visualization
-- AI-powered content generation
-- Quiz creation from knowledge nodes
-- Visual relationship mapping
-
-## 🔧 Development
-
-### Code Style
-- TypeScript for type safety
-- ESLint for code linting
-- Prettier for code formatting
-- Conventional commits for version control
-
-### Testing
-```bash
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
+### Project Structure
+```
+mindflow/
+├── app/                    # Expo Router app directory
+│   ├── (tabs)/            # Tab-based navigation
+│   │   ├── index.tsx      # Home screen
+│   │   ├── learn.tsx      # Learning interface
+│   │   ├── notes.tsx      # Note management
+│   │   ├── discover.tsx   # Discovery features
+│   │   └── profile.tsx    # User profile
+│   ├── _layout.tsx        # Root layout
+│   └── index.tsx          # App entry point
+├── src/
+│   ├── components/        # Reusable UI components
+│   ├── services/          # Business logic and APIs
+│   ├── store/            # State management (Zustand)
+│   ├── types/            # TypeScript type definitions
+│   └── utils/            # Utility functions
+├── assets/               # Static assets
+└── package.json          # Dependencies and scripts
 ```
 
-### Building
-```bash
-# Build for production
-npm run build
+### Available Scripts
 
-# Build for specific platform
-npm run build:ios
-npm run build:android
+| Command | Description |
+|---------|-------------|
+| `yarn web` | Start web development server |
+| `yarn ios` | Start iOS development server |
+| `yarn android` | Start Android development server |
+| `yarn type-check` | Run TypeScript type checking |
+| `yarn lint` | Run ESLint for code quality |
+| `yarn build` | Build the application for production |
+
+### Tech Stack
+
+- **Frontend Framework**: React Native with Expo
+- **Navigation**: Expo Router
+- **State Management**: Zustand
+- **Styling**: React Native StyleSheet with Linear Gradients
+- **Icons**: Lucide React Native
+- **Fonts**: Inter & Poppins (Google Fonts)
+- **Type Safety**: TypeScript
+- **Package Manager**: Yarn
+
+## 🎨 UI/UX Features
+
+### Design System
+- **Dark Theme**: Modern dark interface with gradient backgrounds
+- **Responsive Design**: Works seamlessly across devices
+- **Smooth Animations**: Fluid transitions and interactions
+- **Accessibility**: Built with accessibility in mind
+
+### Navigation
+- **Tab-based Navigation**: Intuitive bottom tab navigation
+- **Gesture Support**: Swipe gestures for enhanced interaction
+- **Deep Linking**: Support for direct navigation to specific screens
+
+## 📱 Platform Support
+
+- ✅ **Web** - Full functionality with responsive design
+- ✅ **iOS** - Native iOS app with platform-specific features
+- ✅ **Android** - Native Android app with Material Design
+
+## 🔧 Configuration
+
+### Environment Variables
+Create a `.env` file in the root directory:
+```env
+EXPO_PUBLIC_API_URL=your_api_url_here
+EXPO_PUBLIC_OPENAI_API_KEY=your_openai_key_here
 ```
 
-## 📊 Data Models
-
-### User
-```typescript
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  avatar: string;
-  level: number;
-  experience: number;
-  achievements: Achievement[];
-  following: string[];
-  followers: string[];
-  preferences: UserPreferences;
-}
-```
-
-### Knowledge Node
-```typescript
-interface KnowledgeNode {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: string[];
-  color: string;
-  position: { x: number; y: number; z: number };
-  connections: string[];
-  creator: string;
-  media: Media[];
-}
-```
-
-### Content
-```typescript
-interface Content {
-  id: string;
-  type: 'video' | 'note' | 'quiz' | 'knowledge';
-  title: string;
-  description: string;
-  media: Media[];
-  creator: string;
-  likes: number;
-  comments: Comment[];
-  shares: number;
-  tags: string[];
-  relatedNodes: string[];
-}
-```
-
-## 🎮 Gamification System
-
-### Experience Points (XP)
-- **Content Creation**: 10-50 XP
-- **Learning Activities**: 5-25 XP
-- **Social Interactions**: 2-10 XP
-- **Achievements**: 100-500 XP
-
-### Levels
-- Level 1: 0 XP
-- Level 2: 1,000 XP
-- Level 3: 2,000 XP
-- And so on...
-
-### Achievements
-- **First Steps**: Create your first knowledge node
-- **Social Butterfly**: Follow 10 creators
-- **Quiz Master**: Complete 50 quizzes
-- **Content Creator**: Share 25 pieces of content
-- **Knowledge Seeker**: Create 100 knowledge nodes
-
-## 🔮 Future Roadmap
-
-### Phase 2 (Q2 2024)
-- [ ] AR Knowledge Visualization
-- [ ] Voice-to-Knowledge input
-- [ ] Collaborative Knowledge Spaces
-- [ ] Advanced Analytics Dashboard
-
-### Phase 3 (Q3 2024)
-- [ ] AI Tutor integration
-- [ ] Virtual Study Groups
-- [ ] Knowledge Marketplace
-- [ ] Platform Integrations
-
-### Phase 4 (Q4 2024)
-- [ ] Advanced AI features
-- [ ] Mobile AR capabilities
-- [ ] Enterprise features
-- [ ] API for third-party integrations
+### Customization
+- **Themes**: Modify colors in the theme configuration
+- **Fonts**: Update font families in the layout configuration
+- **Features**: Enable/disable features through the settings
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please follow these steps:
 
-### Development Setup
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+- Follow TypeScript best practices
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
 
 ## 📄 License
 
@@ -295,19 +172,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **IHSAN-Dashboard**: For productivity and dashboard inspiration
-- **MindWeb**: For knowledge management concepts
-- **TikTik**: For social feed and content creation patterns
-- **OpenAI**: For AI integration capabilities
-- **React Native Community**: For the amazing ecosystem
+- **Expo Team** - For the amazing development platform
+- **React Native Community** - For the robust ecosystem
+- **Lucide Icons** - For the beautiful icon set
+- **Google Fonts** - For the typography
 
 ## 📞 Support
 
-- **Documentation**: [docs.mindflow.app](https://docs.mindflow.app)
-- **Issues**: [GitHub Issues](https://github.com/mindflow/issues)
-- **Discord**: [Join our community](https://discord.gg/mindflow)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/mindflow/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/mindflow/discussions)
 - **Email**: support@mindflow.app
 
 ---
 
-**Start your learning journey with MindFlow today! 🚀**
+**Made with ❤️ by the MindFlow Team**
+
+*Transform your learning journey with MindFlow - where knowledge meets innovation.*

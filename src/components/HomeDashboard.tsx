@@ -40,6 +40,7 @@ import {
   Bookmark,
   User,
   Settings,
+  Compass,
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 import { useRouter } from 'expo-router';
@@ -144,6 +145,148 @@ const HomeDashboard: React.FC = () => {
   });
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Quick Actions Component
+  const QuickActionsBar = () => (
+    <View style={styles.quickActionsContainer}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.quickActionsScroll}
+      >
+        <TouchableOpacity 
+          style={styles.quickActionButton} 
+          onPress={() => setShowTaskModal(true)}
+        >
+          <Plus size={16} color="#3B82F6" strokeWidth={2} />
+          <Text style={styles.quickActionText}>Quick Task</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.quickActionButton} 
+          onPress={() => setShowNoteModal(true)}
+        >
+          <FileText size={16} color="#10B981" strokeWidth={2} />
+          <Text style={styles.quickActionText}>New Note</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.quickActionButton} 
+          onPress={() => router.push('/(tabs)/learn')}
+        >
+          <BookOpen size={16} color="#F59E0B" strokeWidth={2} />
+          <Text style={styles.quickActionText}>Learn</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.quickActionButton} 
+          onPress={() => router.push('/(tabs)/discover')}
+        >
+          <Compass size={16} color="#8B5CF6" strokeWidth={2} />
+          <Text style={styles.quickActionText}>Discover</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.quickActionButton} 
+          onPress={() => setShowQuickTasksModal(true)}
+        >
+          <Zap size={16} color="#EF4444" strokeWidth={2} />
+          <Text style={styles.quickActionText}>Quick Tasks</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+
+  // Progress Tracking Widget
+  const ProgressWidget = () => {
+    const completedTasks = tasks.filter(task => task.completed).length;
+    const totalTasks = tasks.length;
+    const completedNotes = notes.length;
+    const knowledgeCount = knowledgeNodes.length;
+    const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+    
+    return (
+      <View style={styles.progressContainer}>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressTitle}>Your Progress</Text>
+          <Award size={20} color="#F59E0B" strokeWidth={2} />
+        </View>
+        
+        <View style={styles.progressStats}>
+          <View style={styles.progressStat}>
+            <Text style={styles.progressStatNumber}>{completedTasks}</Text>
+            <Text style={styles.progressStatLabel}>Tasks Done</Text>
+          </View>
+          
+          <View style={styles.progressStat}>
+            <Text style={styles.progressStatNumber}>{completedNotes}</Text>
+            <Text style={styles.progressStatLabel}>Notes Created</Text>
+          </View>
+          
+          <View style={styles.progressStat}>
+            <Text style={styles.progressStatNumber}>{knowledgeCount}</Text>
+            <Text style={styles.progressStatLabel}>Knowledge Nodes</Text>
+          </View>
+        </View>
+        
+        <View style={styles.progressBarContainer}>
+          <Text style={styles.progressBarLabel}>Task Completion</Text>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressBarFill, 
+                { width: `${taskProgress}%` }
+              ]} 
+            />
+          </View>
+          <Text style={styles.progressBarText}>{Math.round(taskProgress)}%</Text>
+        </View>
+      </View>
+    );
+  };
+
+  // Weather and Time Widget
+  const WeatherTimeWidget = () => {
+    const [currentTime, setCurrentTime] = useState(new Date());
+    
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    }, []);
+    
+    const formatTime = (date: Date) => {
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    };
+    
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric'
+      });
+    };
+    
+    return (
+      <View style={styles.weatherTimeContainer}>
+        <View style={styles.timeSection}>
+          <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+          <Text style={styles.dateText}>{formatDate(currentTime)}</Text>
+        </View>
+        
+        <View style={styles.weatherSection}>
+          <Text style={styles.weatherText}>☀️ 72°F</Text>
+          <Text style={styles.weatherLocation}>San Francisco</Text>
+        </View>
+      </View>
+    );
+  };
 
   // Update real-time data when store changes
   useEffect(() => {
@@ -733,6 +876,15 @@ const HomeDashboard: React.FC = () => {
               </View>
             ))}
           </View>
+
+          {/* Quick Actions Bar */}
+          <QuickActionsBar />
+
+          {/* Progress Tracking Widget */}
+          <ProgressWidget />
+
+          {/* Weather and Time Widget */}
+          <WeatherTimeWidget />
 
           {/* Recent Activity - Notes Section */}
           <View style={styles.sectionHeader}>
@@ -2217,6 +2369,129 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'stretch',
     marginHorizontal: 0,
+  },
+  quickActionsContainer: {
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    marginTop: 16,
+  },
+  quickActionsScroll: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  quickActionButton: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  quickActionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    marginTop: 8,
+  },
+  progressContainer: {
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  progressTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+  },
+  progressStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 12,
+  },
+  progressStat: {
+    alignItems: 'center',
+  },
+  progressStatNumber: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+  },
+  progressStatLabel: {
+    color: '#CCCCCC',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    marginTop: 4,
+  },
+  progressBarContainer: {
+    marginTop: 12,
+  },
+  progressBarLabel: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#334155',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 4,
+  },
+  progressBarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  weatherTimeContainer: {
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  timeSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  timeText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+  },
+  dateText: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+  },
+  weatherSection: {
+    alignItems: 'center',
+  },
+  weatherText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+  },
+  weatherLocation: {
+    color: '#CCCCCC',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
   },
 });
 

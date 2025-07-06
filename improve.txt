@@ -1,6 +1,0 @@
--Modify Quick Action : Tasks , remove Knowledge actions
--Add recent read , knowledge discovered.
--Make the reading to learn experience & save files recently added 
--Make ai agent assistant 
--Discover Tab : remove music , make the recording feature 
--later stage feature : connect read with knowledge. 
