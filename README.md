@@ -170,21 +170,7 @@ We welcome contributions! Please follow these steps:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- **Expo Team** - For the amazing development platform
-- **React Native Community** - For the robust ecosystem
-- **Lucide Icons** - For the beautiful icon set
-- **Google Fonts** - For the typography
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/mindflow/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/mindflow/discussions)
-- **Email**: support@mindflow.app
 
 ---
 
-**Made with ❤️ by the MindFlow Team**
-
-*Transform your learning journey with MindFlow - where knowledge meets innovation.*
+**Made with ❤️ **
