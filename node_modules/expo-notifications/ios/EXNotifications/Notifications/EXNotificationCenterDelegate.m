@@ -127,7 +127,9 @@ EX_REGISTER_SINGLETON_MODULE(NotificationCenterDelegate);
   BOOL responseWillBeHandledByAppropriateDelegate = NO;
   for (int i = 0; i < _delegates.count; i++) {
     id pointer = [_delegates pointerAtIndex:i];
-    if ([pointer respondsToSelector:@selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)]) {
+    if ([pointer respondsToSelector:@selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)] 
+      && ![NSStringFromClass([pointer class]) isEqual: @"EXUserNotificationManager"]) {
+      // Remove EXUserNotificationManager check when LegacyNotifications are no longer supported
       responseWillBeHandledByAppropriateDelegate = YES;
       break;
     }
@@ -188,6 +190,10 @@ EX_REGISTER_SINGLETON_MODULE(NotificationCenterDelegate);
       [delegate userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:^{
         // completion handler doesn't need to do anything
       }];
+    }
+    // Remove EXUserNotificationManager check when LegacyNotifications are no longer supported
+    if (![NSStringFromClass([delegate class]) isEqual:@"EXUserNotificationManager"]) {
+      [_pendingNotificationResponses removeAllObjects];
     }
   }
 }

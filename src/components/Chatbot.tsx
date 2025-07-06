@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, TextInput, StyleSheet, FlatList, A
 import { MessageCircle, X, Send } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePathname } from 'expo-router';
 let BlurView: any = View;
 if (Platform.OS !== 'web') {
   try {
@@ -22,7 +23,11 @@ const { width } = Dimensions.get('window');
 const smallFabSize = Math.min(Math.round(width * 0.11), 56); // clamp to 56px max
 const smallIconSize = Math.min(Math.round(width * 0.06), 28); // clamp to 28px max
 
-const Chatbot: React.FC = () => {
+interface ChatbotProps {
+  hidden?: boolean;
+}
+
+const Chatbot: React.FC<ChatbotProps> = ({ hidden = false }) => {
   const [visible, setVisible] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -30,6 +35,14 @@ const Chatbot: React.FC = () => {
   const { openAIApiKey } = useStore();
   const flatListRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+
+  // Hide chatbot on discover tab
+  const isDiscoverTab = pathname === '/(tabs)/discover';
+  
+  if (hidden || isDiscoverTab) {
+    return null;
+  }
 
   const sendMessage = async () => {
     if (!input.trim() || !openAIApiKey) return;

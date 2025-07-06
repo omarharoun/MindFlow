@@ -276,4 +276,41 @@ export interface AIResponse {
     completionTokens: number;
     totalTokens: number;
   };
+}
+
+// Discover Tab Types
+export interface Fact {
+  id: string;
+  text: string;
+  category: string;
+  imageUrl?: string;
+  source?: string;
+  relatedFactIds?: string[];
+}
+
+export interface HistoricalEvent {
+  id: string;
+  date: string; // ISO date string (YYYY-MM-DD)
+  title: string;
+  description: string;
+  imageUrl?: string;
+  source?: string;
+}
+
+export interface MapFact {
+  id: string;
+  country: string;
+  region?: string;
+  fact: string;
+  coordinates: { lat: number; lng: number };
+  imageUrl?: string;
+  source?: string;
+}
+
+export interface GameFact {
+  id: string;
+  text: string;
+  isTrue: boolean;
+  explanation?: string;
+  source?: string;
 } 

@@ -3,11 +3,11 @@
 /* eslint-disable @typescript-eslint/ban-types */
 declare module "expo-router" {
   import type { LinkProps as OriginalLinkProps } from 'expo-router/build/link/Link';
-  import type { Router as OriginalRouter } from 'expo-router/build/types';
+  import type { Router as OriginalRouter } from 'expo-router/src/types';
   export * from 'expo-router/build';
 
   // prettier-ignore
-  type StaticRoutes = `/` | `/(tabs)/discover` | `/discover` | `/(tabs)/` | `/(tabs)` | `/(tabs)/learn` | `/learn` | `/(tabs)/notes` | `/notes` | `/(tabs)/profile` | `/profile`;
+  type StaticRoutes = `/` | `/(tabs)/_layout` | `/_layout` | `/(tabs)/discover` | `/discover` | `/(tabs)/` | `/(tabs)` | `/(tabs)/learn` | `/learn` | `/(tabs)/notes` | `/notes` | `/(tabs)/profile` | `/profile`;
   // prettier-ignore
   type DynamicRoutes<T extends string> = never;
   // prettier-ignore
@@ -15,10 +15,9 @@ declare module "expo-router" {
 
   type RelativePathString = `./${string}` | `../${string}` | '..';
   type AbsoluteRoute = DynamicRouteTemplate | StaticRoutes;
-  type ExternalPathString = `${string}:${string}`;
-
+  type ExternalPathString = `http${string}`;
   type ExpoRouterRoutes = DynamicRouteTemplate | StaticRoutes | RelativePathString;
-  export type AllRoutes = ExpoRouterRoutes | ExternalPathString;
+  type AllRoutes = ExpoRouterRoutes | ExternalPathString;
 
   /****************
    * Route Utils  *
@@ -165,7 +164,7 @@ declare module "expo-router" {
 
   export type HrefObject<
     R extends Record<'pathname', string>,
-    P = R['pathname'],
+    P = R['pathname']
   > = P extends DynamicRouteTemplate
     ? { pathname: P; params: InputRouteParams<P> }
     : P extends Route<P>
@@ -209,10 +208,9 @@ declare module "expo-router" {
    * @param props.replace Should replace the current route without adding to the history.
    * @param props.asChild Forward props to child component. Useful for custom buttons.
    * @param props.children Child elements to render the content.
-   * @param props.className On web, this sets the HTML `class` directly. On native, this can be used with CSS interop tools like Nativewind.
    */
   export const Link: LinkComponent;
-
+  
   /** Redirects to the href as soon as the component is mounted. */
   export const Redirect: <T>(
     props: React.PropsWithChildren<{ href: Href<T> }>
@@ -224,19 +222,19 @@ declare module "expo-router" {
   export function useRouter(): Router;
 
   export function useLocalSearchParams<
-    T extends AllRoutes | UnknownOutputParams = UnknownOutputParams,
+    T extends AllRoutes | UnknownOutputParams = UnknownOutputParams
   >(): T extends AllRoutes ? SearchParams<T> : T;
 
   /** @deprecated renamed to `useGlobalSearchParams` */
   export function useSearchParams<
-    T extends AllRoutes | UnknownOutputParams = UnknownOutputParams,
+    T extends AllRoutes | UnknownOutputParams = UnknownOutputParams
   >(): T extends AllRoutes ? SearchParams<T> : T;
 
   export function useGlobalSearchParams<
-    T extends AllRoutes | UnknownOutputParams = UnknownOutputParams,
+    T extends AllRoutes | UnknownOutputParams = UnknownOutputParams
   >(): T extends AllRoutes ? SearchParams<T> : T;
 
   export function useSegments<
-    T extends AbsoluteRoute | RouteSegments<AbsoluteRoute> | RelativePathString,
+    T extends AbsoluteRoute | RouteSegments<AbsoluteRoute> | RelativePathString
   >(): T extends AbsoluteRoute ? RouteSegments<T> : T extends string ? string[] : T;
 }

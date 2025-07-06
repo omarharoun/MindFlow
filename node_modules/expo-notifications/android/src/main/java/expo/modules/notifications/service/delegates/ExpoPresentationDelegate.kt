@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.media.RingtoneManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Parcel
 import android.provider.Settings
@@ -113,6 +114,11 @@ open class ExpoPresentationDelegate(
    * @return A collection of currently displayed notifications.
    */
   override fun getAllPresentedNotifications(): Collection<Notification> {
+    // getActiveNotifications() is not supported on platforms below Android 23
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+      return emptyList()
+    }
+
     val notificationManager = (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
     return notificationManager.activeNotifications.mapNotNull { getNotification(it) }
   }

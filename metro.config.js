@@ -1,4 +1,4 @@
-const { getDefaultConfig } = require('expo/metro-config');
+const { getDefaultConfig } = require('@expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
@@ -31,6 +31,10 @@ config.resolver = {
   ...config.resolver,
   useWatchman: true,
   enableGlobalPackages: true,
+  alias: {
+    // Properly handle react-native-maps for web
+    'react-native-maps': require.resolve('./emptyModule.js'),
+  },
 };
 
 module.exports = config; 

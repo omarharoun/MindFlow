@@ -35,22 +35,32 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  Upload,
+  Award,
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 import { KnowledgeNode } from '../types';
 
 const { width, height } = Dimensions.get('window');
 
-let BlurView = View;
+let BlurView: any = View;
 if (Platform.OS !== 'web') {
-  BlurView = require('expo-blur').BlurView;
+  try {
+    BlurView = require('expo-blur').BlurView;
+  } catch (e) {
+    BlurView = View;
+  }
 }
 
 interface KnowledgeMapProps {
   onNodePress?: (node: KnowledgeNode) => void;
+  setShowQuizModal?: (show: boolean) => void;
+  hideFab?: boolean;
+  showAddNodeModal?: boolean;
+  setShowAddNodeModal?: (show: boolean) => void;
 }
 
-const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
+const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress, setShowQuizModal, hideFab = false, showAddNodeModal, setShowAddNodeModal }) => {
   const {
     knowledgeNodes,
     selectedNode,
@@ -61,7 +71,6 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
     addExperience,
   } = useStore();
 
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showNodeModal, setShowNodeModal] = useState(false);
   const [editingNode, setEditingNode] = useState<KnowledgeNode | null>(null);
   const [formData, setFormData] = useState({
@@ -77,6 +86,7 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({});
   const [isLayoutCalculating, setIsLayoutCalculating] = useState(false);
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
+  const [fabOpen, setFabOpen] = useState(false);
 
   const categories = [
     { id: 'all', name: 'All', color: '#6B7280' },
@@ -242,7 +252,7 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
   const handleAddNode = () => {
     setEditingNode(null);
     setFormData({ title: '', content: '', tags: [] });
-    setShowAddModal(true);
+    setShowAddNodeModal && setShowAddNodeModal(true);
   };
 
   const handleEditNode = (node: KnowledgeNode) => {
@@ -253,7 +263,7 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
       tags: node.tags,
     });
     setSelectedColor(node.color);
-    setShowAddModal(true);
+    setShowAddNodeModal && setShowAddNodeModal(true);
   };
 
   const handleDeleteNode = (node: KnowledgeNode) => {
@@ -322,7 +332,7 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
       addExperience(10);
       Alert.alert('Node Updated', 'Knowledge node has been updated!');
     }
-    setShowAddModal(false);
+    if (setShowAddNodeModal) setShowAddNodeModal(false);
     setEditingNode(null);
     setFormData({ title: '', content: '', tags: [] });
   };
@@ -334,6 +344,14 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
       onNodePress(node);
     }
   };
+
+  // Floating Action Button actions
+  const fabActions = [
+    { icon: <Edit size={28} color="#222" />, label: 'Add Node', onPress: () => { setShowAddNodeModal && setShowAddNodeModal(true); setFabOpen(false); } },
+    { icon: <Upload size={28} color="#007AFF" />, label: 'Import', onPress: () => { /* TODO: implement import */ setFabOpen(false); } },
+    { icon: <Award size={28} color="#FFD700" />, label: 'Create Quiz', onPress: () => { setShowQuizModal && setShowQuizModal(true); setFabOpen(false); } },
+    // Add more actions as needed
+  ];
 
   const renderNode = (node: KnowledgeNode, index?: number) => {
     if (viewMode === 'map') {
@@ -517,104 +535,106 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
 
   const renderAddModal = () => (
     <Modal
-      visible={showAddModal}
+      visible={!!showAddNodeModal}
       animationType="slide"
-      presentationStyle="pageSheet"
+      transparent
     >
-      <SafeAreaView style={styles.modalContainer}>
-        <LinearGradient
-          colors={['#0F172A', '#1E293B']}
-          style={styles.modalBackground}
-        >
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {editingNode ? 'Edit Knowledge Node' : 'Create Knowledge Node'}
-            </Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowAddModal(false)}
-            >
-              <X size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Title</Text>
-              <TextInput
-                style={styles.textInput}
-                value={formData.title}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
-                placeholder="Enter node title..."
-                placeholderTextColor="#64748B"
-              />
-            </View>
-
-            <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Content</Text>
-              <TextInput
-                style={[styles.textInput, styles.textArea]}
-                value={formData.content}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, content: text }))}
-                placeholder="Describe your knowledge..."
-                placeholderTextColor="#64748B"
-                multiline
-                numberOfLines={6}
-              />
-            </View>
-
-            <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Category</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
-                {categories.slice(1).map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryButton,
-                      selectedCategory === category.id && { backgroundColor: category.color + '20' }
-                    ]}
-                    onPress={() => setSelectedCategory(category.id)}
-                  >
-                    <Text style={[
-                      styles.categoryButtonText,
-                      selectedCategory === category.id && { color: category.color }
-                    ]}>
-                      {category.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
-            <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Color</Text>
-              <View style={styles.colorPicker}>
-                {colorOptions.map((color) => (
-                  <TouchableOpacity
-                    key={color}
-                    style={[
-                      styles.colorOption,
-                      { backgroundColor: color },
-                      selectedColor === color && styles.selectedColorOption
-                    ]}
-                    onPress={() => setSelectedColor(color)}
-                  />
-                ))}
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: selectedColor }]}
-              onPress={handleSaveNode}
-            >
-              <Save size={20} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>
-                {editingNode ? 'Update Node' : 'Create Node'}
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <LinearGradient
+            colors={['#0F172A', '#1E293B']}
+            style={styles.modalBackground}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editingNode ? 'Edit Knowledge Node' : 'Create Knowledge Node'}
               </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </LinearGradient>
-      </SafeAreaView>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowAddNodeModal && setShowAddNodeModal(false)}
+              >
+                <X size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Title</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.title}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
+                  placeholder="Enter node title..."
+                  placeholderTextColor="#64748B"
+                />
+              </View>
+
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Content</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textArea]}
+                  value={formData.content}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, content: text }))}
+                  placeholder="Describe your knowledge..."
+                  placeholderTextColor="#64748B"
+                  multiline
+                  numberOfLines={6}
+                />
+              </View>
+
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Category</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
+                  {categories.slice(1).map((category) => (
+                    <TouchableOpacity
+                      key={category.id}
+                      style={[
+                        styles.categoryButton,
+                        selectedCategory === category.id && { backgroundColor: category.color + '20' }
+                      ]}
+                      onPress={() => setSelectedCategory(category.id)}
+                    >
+                      <Text style={[
+                        styles.categoryButtonText,
+                        selectedCategory === category.id && { color: category.color }
+                      ]}>
+                        {category.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Color</Text>
+                <View style={styles.colorPicker}>
+                  {colorOptions.map((color) => (
+                    <TouchableOpacity
+                      key={color}
+                      style={[
+                        styles.colorOption,
+                        { backgroundColor: color },
+                        selectedColor === color && styles.selectedColorOption
+                      ]}
+                      onPress={() => setSelectedColor(color)}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: selectedColor }]}
+                onPress={handleSaveNode}
+              >
+                <Save size={20} color="#FFFFFF" />
+                <Text style={styles.saveButtonText}>
+                  {editingNode ? 'Update Node' : 'Create Node'}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </LinearGradient>
+        </View>
+      </View>
     </Modal>
   );
 
@@ -622,97 +642,99 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
     <Modal
       visible={showNodeModal}
       animationType="slide"
-      presentationStyle="pageSheet"
+      transparent
     >
-      <SafeAreaView style={styles.modalContainer}>
-        <LinearGradient
-          colors={['#0F172A', '#1E293B']}
-          style={styles.modalBackground}
-        >
-          {selectedNode && (
-            <>
-              <View style={styles.modalHeader}>
-                <View style={[styles.nodeColorIndicator, { backgroundColor: selectedNode.color }]} />
-                <Text style={styles.modalTitle}>{selectedNode.title}</Text>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setShowNodeModal(false)}
-                >
-                  <X size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView style={styles.modalContent}>
-                <View style={styles.nodeDetailSection}>
-                  <Text style={styles.nodeDetailContent}>{selectedNode.content}</Text>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <LinearGradient
+            colors={['#0F172A', '#1E293B']}
+            style={styles.modalBackground}
+          >
+            {selectedNode && (
+              <>
+                <View style={styles.modalHeader}>
+                  <View style={[styles.nodeColorIndicator, { backgroundColor: selectedNode.color }]} />
+                  <Text style={styles.modalTitle}>{selectedNode.title}</Text>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setShowNodeModal(false)}
+                  >
+                    <X size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
                 </View>
 
-                <View style={styles.nodeDetailSection}>
-                  <Text style={styles.nodeDetailLabel}>Category</Text>
-                  <Text style={styles.nodeDetailValue}>
-                    {categories.find(cat => cat.id === selectedNode.category)?.name || 'Personal'}
-                  </Text>
-                </View>
-
-                {selectedNode.tags.length > 0 && (
+                <ScrollView style={styles.modalContent}>
                   <View style={styles.nodeDetailSection}>
-                    <Text style={styles.nodeDetailLabel}>Tags</Text>
-                    <View style={styles.tagsContainer}>
-                      {selectedNode.tags.map((tag, index) => (
-                        <View key={index} style={styles.tagChip}>
-                          <Text style={styles.tagChipText}>{tag}</Text>
-                        </View>
-                      ))}
+                    <Text style={styles.nodeDetailContent}>{selectedNode.content}</Text>
+                  </View>
+
+                  <View style={styles.nodeDetailSection}>
+                    <Text style={styles.nodeDetailLabel}>Category</Text>
+                    <Text style={styles.nodeDetailValue}>
+                      {categories.find(cat => cat.id === selectedNode.category)?.name || 'Personal'}
+                    </Text>
+                  </View>
+
+                  {selectedNode.tags.length > 0 && (
+                    <View style={styles.nodeDetailSection}>
+                      <Text style={styles.nodeDetailLabel}>Tags</Text>
+                      <View style={styles.tagsContainer}>
+                        {selectedNode.tags.map((tag, index) => (
+                          <View key={index} style={styles.tagChip}>
+                            <Text style={styles.tagChipText}>{tag}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={styles.nodeDetailSection}>
+                    <Text style={styles.nodeDetailLabel}>Stats</Text>
+                    <View style={styles.statsRow}>
+                      <View style={styles.statItem}>
+                        <Eye size={16} color="#64748B" />
+                        <Text style={styles.statText}>{selectedNode.views} views</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Heart size={16} color="#64748B" />
+                        <Text style={styles.statText}>{selectedNode.likes} likes</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Link size={16} color="#64748B" />
+                        <Text style={styles.statText}>{selectedNode.connections.length} connections</Text>
+                      </View>
                     </View>
                   </View>
-                )}
 
-                <View style={styles.nodeDetailSection}>
-                  <Text style={styles.nodeDetailLabel}>Stats</Text>
-                  <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                      <Eye size={16} color="#64748B" />
-                      <Text style={styles.statText}>{selectedNode.views} views</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Heart size={16} color="#64748B" />
-                      <Text style={styles.statText}>{selectedNode.likes} likes</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Link size={16} color="#64748B" />
-                      <Text style={styles.statText}>{selectedNode.connections.length} connections</Text>
-                    </View>
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      style={[styles.actionButton, { backgroundColor: selectedNode.color }]}
+                      onPress={() => {
+                        setShowNodeModal(false);
+                        handleEditNode(selectedNode);
+                      }}
+                    >
+                      <Edit size={16} color="#FFFFFF" />
+                      <Text style={styles.actionButtonText}>Edit</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionButton, { backgroundColor: '#EF4444' }]}
+                      onPress={() => {
+                        setShowNodeModal(false);
+                        handleDeleteNode(selectedNode);
+                      }}
+                    >
+                      <Trash2 size={16} color="#FFFFFF" />
+                      <Text style={styles.actionButtonText}>Delete</Text>
+                    </TouchableOpacity>
                   </View>
-                </View>
-
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: selectedNode.color }]}
-                    onPress={() => {
-                      setShowNodeModal(false);
-                      handleEditNode(selectedNode);
-                    }}
-                  >
-                    <Edit size={16} color="#FFFFFF" />
-                    <Text style={styles.actionButtonText}>Edit</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: '#EF4444' }]}
-                    onPress={() => {
-                      setShowNodeModal(false);
-                      handleDeleteNode(selectedNode);
-                    }}
-                  >
-                    <Trash2 size={16} color="#FFFFFF" />
-                    <Text style={styles.actionButtonText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-            </>
-          )}
-        </LinearGradient>
-      </SafeAreaView>
+                </ScrollView>
+              </>
+            )}
+          </LinearGradient>
+        </View>
+      </View>
     </Modal>
   );
 
@@ -727,11 +749,6 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
               {filteredNodes.length} nodes • {knowledgeNodes.length} total
             </Text>
           </View>
-          <TouchableOpacity style={styles.fab} onPress={handleAddNode}>
-            <BlurView intensity={40} tint="light" style={styles.fabBlur}>
-              <Plus size={Math.round(width * 0.09)} color="#fff" />
-            </BlurView>
-          </TouchableOpacity>
         </View>
 
         {/* Search and Filters */}
@@ -903,6 +920,69 @@ const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ onNodePress }) => {
           </ScrollView>
         )}
       </View>
+
+      {/* Floating Action Button and Menu */}
+      {!hideFab && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 32,
+            right: 24,
+            alignItems: 'center',
+            zIndex: 1000,
+          }}
+          pointerEvents="box-none"
+        >
+          {fabOpen && (
+            <View style={{ flexDirection: 'column', alignItems: 'center', marginBottom: 12 }}>
+              {fabActions.map((action, i) => (
+                <TouchableOpacity
+                  key={action.label}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    marginBottom: 12,
+                    backgroundColor: '#fff',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 3,
+                    elevation: 6,
+                  }}
+                  activeOpacity={0.8}
+                  onPress={action.onPress}
+                >
+                  {action.icon}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          <TouchableOpacity
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: '#3B82F6',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 3,
+              borderColor: '#fff',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 8,
+            }}
+            onPress={() => setFabOpen(!fabOpen)}
+            activeOpacity={0.8}
+          >
+            {fabOpen ? <X size={36} color="#fff" /> : <Plus size={36} color="#fff" />}
+          </TouchableOpacity>
+        </View>
+      )}
 
       {renderAddModal()}
       {renderNodeModal()}
@@ -1166,11 +1246,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.8,
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '60%',
   },
   modalBackground: {
-    flex: 1,
+    borderRadius: 16,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1198,6 +1288,7 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: 20,
+    maxHeight: 400,
   },
   formSection: {
     marginBottom: 24,

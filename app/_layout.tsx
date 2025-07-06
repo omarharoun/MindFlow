@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font';
 import { SplashScreen } from 'expo-router';
 import { useStore } from '../src/store/useStore';
 import Chatbot from '../src/components/Chatbot';
+import ErrorBoundary from '../src/components/ErrorBoundary';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -36,7 +37,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -49,6 +50,6 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <Chatbot />
-    </>
+    </ErrorBoundary>
   );
 } 

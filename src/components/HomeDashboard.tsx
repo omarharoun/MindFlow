@@ -572,7 +572,7 @@ const HomeDashboard: React.FC = () => {
           ]}
           pointerEvents="box-none"
         >
-          {/* Menu buttons, unfold upwards in a vertical list */}
+          {/* Menu buttons, unfold upwards in a vertical list (overlapping/absolute) */}
           {buttons.map((btn, i) => (
             <TouchableOpacity
               key={btn.key}
